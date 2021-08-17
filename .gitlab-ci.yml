@@ -1,0 +1,26 @@
+stages:
+  - release
+
+goreleaser:
+  stage: release
+  image: registry.trendyol.com/platform/base/image/docker:19.03.5
+  variables:
+    DOCKER_API_VERSION: "1.35"
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - alias: docker
+      name: registry.trendyol.com/platform/base/image/docker:19.03.5-dind
+  script:
+    - |
+      docker container run --rm --privileged \
+      -v $(pwd):/kink \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -w /kink \
+      --entrypoint="/bin/sh" \
+      -e GITLAB_TOKEN=$GITLAB_TOKEN \
+      registry.trendyol.com/platform/base/image/gythialy/golang-cross:v1.16.6@sha256:a31f3981571aab561bfdc2c50bf25142f2460a47c35e76ae9d50826e3a1aabac \
+      -c "GITLAB_TOKEN=$GITLAB_TOKEN make release"
+  only:
+    refs:
+      - tags
