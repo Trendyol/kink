@@ -1,5 +1,5 @@
 /*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
+Copyright © 2021 pe.container <pe.container@trendyol.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 // NewCmdDelete represents the delete command
 func NewCmdDelete() *cobra.Command {
 	var all bool
-	var namespace string
+	var namespace, kubeconfig string
 
 	var cmd = &cobra.Command{
 		Use:   "delete",
@@ -42,6 +42,7 @@ to quickly create a Cobra application.`,
 
 	cmd.PersistentFlags().BoolVarP(&all, "all", "a", false, "All pods")
 	cmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
+	cmd.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "c", "", "Path to KUBECONFIG")
 
 	return cmd
 }

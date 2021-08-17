@@ -1,5 +1,5 @@
 /*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
+Copyright © 2021 pe.container <pe.container@trendyol.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 
 // NewCmdRun represents the run command
 func NewCmdRun() *cobra.Command {
-	var k8sVersion, apiServerPort, namespace, kubeconfig string
+	var k8sVersion, namespace, kubeconfig string
 
 	var cmd = &cobra.Command{
 		Use:   "run",
@@ -40,11 +40,8 @@ to quickly create a Cobra application.`,
 	}
 
 	cmd.PersistentFlags().StringVarP(&k8sVersion, "kubernetes-version", "k", "", "Desired version of Kubernetes")
-	cmd.PersistentFlags().StringVarP(&apiServerPort, "api-server-port", "p", "", "API Server Port")
 	cmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "c", "", "Path to KUBECONFIG")
-
-
 
 	return cmd
 }

@@ -1,5 +1,5 @@
 /*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
+Copyright © 2021 pe.container <pe.container@trendyol.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,34 +23,37 @@ import (
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/types"
 )
 
-// listSupportedVersionsCmd represents the listSupportedVersions command
-var listSupportedVersionsCmd = &cobra.Command{
-	Use:   "list-supported-versions",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
+// NewListSupportedVersionsCmd represents the listSupportedVersions command
+func NewListSupportedVersionsCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "list-supported-versions",
+		Short: "A brief description of your command",
+		Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	RunE: func(_ *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			return errors.New("you should not give an arguments")
-		}
-		tags, err := crane.ListTags(types.ImageRepository)
-		if err != nil {
-			return fmt.Errorf("reading tags for %s: %v", types.ImageRepository, err)
-		}
+		RunE: func(_ *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				return errors.New("you should not provide any arguments")
+			}
+			tags, err := crane.ListTags(types.ImageRepository)
+			if err != nil {
+				return fmt.Errorf("reading tags for %s: %v", types.ImageRepository, err)
+			}
 
-		for _, tag := range tags {
-			fmt.Println(tag)
-		}
-		return nil
-	},
+			for _, tag := range tags {
+				fmt.Println(tag)
+			}
+			return nil
+		},
+	}
+	return cmd
 }
 
 func init() {
-	rootCmd.AddCommand(listSupportedVersionsCmd)
+	rootCmd.AddCommand(NewListSupportedVersionsCmd())
 
 	// Here you will define your flags and configuration settings.
 
