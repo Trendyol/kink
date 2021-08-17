@@ -16,14 +16,18 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
+	"os/user"
 )
 
 // NewCmdList represents the list command
 func NewCmdList() *cobra.Command {
-	var namespace, kubeconfig string
+	var namespace string
 
 	var cmd = &cobra.Command{
 		Use:   "list",
@@ -34,13 +38,39 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("list called")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := kubernetes.Client()
+			if err != nil {
+				return err
+			}
+
+			kubeclient := client.CoreV1().Pods(namespace)
+
+			user, err := user.Current()
+			if err != nil {
+				return err
+			}
+
+			hostname, err := os.Hostname()
+			if err != nil {
+				return err
+			}
+
+			pods, err := kubeclient.List(context.TODO(), metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", user.Username, hostname)),
+			})
+
+			if err != nil {
+				return err
+			}
+
+			for _, pod := range pods.Items {
+				fmt.Println(pod.Name)
+			}
+			return nil
 		},
 	}
-
-	cmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
-	cmd.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "c", "", "Path to KUBECONFIG")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
 
 	return cmd
 }

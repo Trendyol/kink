@@ -16,15 +16,19 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
+	"os/user"
 )
 
 // NewCmdDelete represents the delete command
 func NewCmdDelete() *cobra.Command {
-	var all bool
-	var namespace, kubeconfig string
+	var all, force bool
+	var name, namespace string
 
 	var cmd = &cobra.Command{
 		Use:   "delete",
@@ -35,14 +39,60 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("delete called")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := kubernetes.Client()
+			if err != nil {
+				return err
+			}
+
+			kubeclient := client.CoreV1().Pods(namespace)
+
+			user, err := user.Current()
+			if err != nil {
+				return err
+			}
+
+			hostname, err := os.Hostname()
+			if err != nil {
+				return err
+			}
+
+			options := metav1.DeleteOptions{}
+			if force {
+				gracePeriodSeconds := int64(0)
+				options.GracePeriodSeconds = &gracePeriodSeconds
+			}
+
+			ctx := context.TODO()
+			if all {
+				pods, err := kubeclient.List(ctx, metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", user.Username, hostname)),
+				})
+
+				if err != nil {
+					return err
+				}
+
+				for _, pod := range pods.Items {
+					fmt.Printf("Deleting %s \n", pod.Name)
+					if err := kubeclient.Delete(ctx, pod.Name, options); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+
+			if err := kubeclient.Delete(ctx, name, options); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 
 	cmd.PersistentFlags().BoolVarP(&all, "all", "a", false, "All pods")
-	cmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
-	cmd.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "c", "", "Path to KUBECONFIG")
+	cmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.PersistentFlags().StringVarP(&name, "name", "", "", "Target pod name")
+	cmd.PersistentFlags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
 }
