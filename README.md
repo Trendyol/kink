@@ -1,3 +1,8 @@
+<div align="center">
+  <img width="500" height="500" src="https://github.com/marcusolsson/gophers/raw/master/viking.png">
+</div>
+
+
 # kink (KinD in Kubernetes)
 
 A helper CLI that facilitates to manage KinD clusters as Kubernetes pods
