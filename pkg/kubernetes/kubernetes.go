@@ -25,7 +25,7 @@ func defaultClientConfig() clientcmd.ClientConfig {
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 }
 
-func restClientConfig() (*rest.Config, error) {
+func RestClientConfig() (*rest.Config, error) {
 	kubeCfg := defaultClientConfig()
 
 	restConfig, err := kubeCfg.ClientConfig()
@@ -45,7 +45,7 @@ func restClientConfig() (*rest.Config, error) {
 }
 
 func Client() (kubernetes.Interface, error) {
-	config, err := restClientConfig()
+	config, err := RestClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("getting client config for Kubernetes client: %w", err)
 	}

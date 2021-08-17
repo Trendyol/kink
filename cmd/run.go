@@ -16,22 +16,33 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/types"
+	"io"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
+	"log"
+	"net/url"
 	"os"
 	"os/user"
+	"strings"
+	"time"
 )
 
 // NewCmdRun represents the run command
 func NewCmdRun() *cobra.Command {
-	var k8sVersion, namespace string
+	var k8sVersion, namespace, outputPath string
+	var timeout int
 
 	var cmd = &cobra.Command{
 		Use:   "run",
@@ -117,6 +128,14 @@ to quickly create a Cobra application.`,
 										},
 									},
 								},
+								{
+									Name: "CERT_SANS",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.hostIP",
+										},
+									},
+								},
 							},
 							Resources: corev1.ResourceRequirements{},
 							VolumeMounts: []corev1.VolumeMount{
@@ -160,22 +179,98 @@ to quickly create a Cobra application.`,
 			}
 
 			// Manage resource
-			_, err = kubeclient.Create(context.TODO(), kindCluster, metav1.CreateOptions{})
+			ctx := context.TODO()
+			_, err = kubeclient.Create(ctx, kindCluster, metav1.CreateOptions{})
 			if err != nil {
 				panic(err)
 			}
+
+			err = wait.PollImmediate(time.Second, time.Duration(timeout)*time.Second, func() (done bool, err error) {
+				fmt.Printf(".") // progress bar!
+
+				pod, err := kubeclient.Get(ctx, podName, metav1.GetOptions{})
+				if err != nil {
+					return false, err
+				}
+
+				switch pod.Status.Phase {
+				case corev1.PodFailed, corev1.PodSucceeded:
+					return false, wait.ErrWaitTimeout
+				}
+
+				for _, cs := range pod.Status.ContainerStatuses {
+					if cs.Ready {
+						return true, nil
+					}
+				}
+
+				return false, nil
+			})
+
+			if err != nil {
+				log.Fatalf("the pod never entered running phase: %v\n", err)
+			}
+
+			const tty = false
+			req := client.CoreV1().RESTClient().Post().
+				Resource("pods").
+				Name(podName).
+				Namespace(namespace).
+				SubResource("exec").
+				Param("container", "kind-cluster")
+
+			req.VersionedParams(&corev1.PodExecOptions{
+				Container: "kind-cluster",
+				Command:   []string{"kubectl", "config", "view", "--minify", "--flatten"},
+				Stdin:     false,
+				Stdout:    true,
+				Stderr:    true,
+				TTY:       tty,
+			}, scheme.ParameterCodec)
+
+			var stdout, stderr bytes.Buffer
+			config, err := kubernetes.RestClientConfig()
+			if err != nil {
+				return err
+			}
+			err = execute("POST", req.URL(), config, nil, &stdout, &stderr, tty)
+
+			fmt.Println(strings.TrimSpace(stdout.String()))
+
 			fmt.Printf(`Thanks for using kink.
 Pod %s created successfully!
 You can view the logs by running the following command:
-$ kubectl logs -f %s -n %s `, podName, podName, namespace)
+$ kubectl logs -f %s -n %s 
+$ You can start using your internal KinD cluster by running the following command:
+$ KUBECONFIG=%s kubectl get nodes -o wide`, outputPath+"/kubeconfig", podName, podName, namespace)
 			return nil
 		},
 	}
 
+	currDir, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("could not get current directory: %v\n", err)
+	}
+
 	cmd.Flags().StringVarP(&k8sVersion, "kubernetes-version", "k", types.ImageTag, "Desired version of Kubernetes")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&outputPath, "output-path", "o", currDir, "Output path for kubeconfig")
+	cmd.Flags().IntVarP(&timeout, "timeout", "t", 30, "timeout for wait")
 
 	return cmd
+}
+
+func execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
+	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
+	if err != nil {
+		return err
+	}
+	return exec.Stream(remotecommand.StreamOptions{
+		Stdin:  stdin,
+		Stdout: stdout,
+		Stderr: stderr,
+		Tty:    tty,
+	})
 }
 
 func ptrbool(p bool) *bool {
