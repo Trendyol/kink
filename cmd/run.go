@@ -244,10 +244,9 @@ to quickly create a Cobra application.`,
 				return err
 			}
 
-			fmt.Printf("replacing ips %s --> %s\n", podIP, hostIP)
 			kubeconfig = strings.ReplaceAll(kubeconfig, podIP, hostIP)
 
-			serviceClient := client.CoreV1().Services("default")
+			serviceClient := client.CoreV1().Services(namespace)
 
 			// Create resource object
 			serviceObj := &corev1.Service{
@@ -281,14 +280,10 @@ to quickly create a Cobra application.`,
 				return err
 			}
 
-			fmt.Println("Service Created successfully!")
 			nodePort := createdService.Spec.Ports[0].NodePort
 			kubeconfig = strings.ReplaceAll(kubeconfig, "30001", fmt.Sprint(nodePort))
 
-			fmt.Printf("replacing ports %s --> %s\n", "30001", fmt.Sprint(nodePort))
 			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
-
-			fmt.Println(kubeconfig)
 
 			err = os.WriteFile(kubeconfigPath, []byte(kubeconfig), 0600)
 			if err != nil {
@@ -296,11 +291,12 @@ to quickly create a Cobra application.`,
 			}
 
 			fmt.Printf(`Thanks for using kink.
-Pod %s created successfully!
+Pod %s and Service %s created successfully!
 You can view the logs by running the following command:
 $ kubectl logs -f %s -n %s 
-$ You can start managing your internal KinD cluster by running the following command:
-$ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, namespace, kubeconfigPath)
+Kubeconfig file generated at path %s. 
+Now, you can start managing your internal KinD cluster by running the following command:
+$ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, podName, namespace, kubeconfigPath, kubeconfigPath)
 			return nil
 		},
 	}

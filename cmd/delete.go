@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"os"
 	"os/user"
 )
@@ -45,9 +46,10 @@ to quickly create a Cobra application.`,
 				return err
 			}
 
-			kubeclient := client.CoreV1().Pods(namespace)
+			podClient := client.CoreV1().Pods(namespace)
+			serviceClient := client.CoreV1().Services(namespace)
 
-			user, err := user.Current()
+			currentUser, err := user.Current()
 			if err != nil {
 				return err
 			}
@@ -65,8 +67,8 @@ to quickly create a Cobra application.`,
 
 			ctx := context.TODO()
 			if all {
-				pods, err := kubeclient.List(ctx, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", user.Username, hostname)),
+				pods, err := podClient.List(ctx, metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", currentUser.Username, hostname)),
 				})
 
 				if err != nil {
@@ -74,17 +76,19 @@ to quickly create a Cobra application.`,
 				}
 
 				for _, pod := range pods.Items {
-					fmt.Printf("Deleting %s \n", pod.Name)
-					if err := kubeclient.Delete(ctx, pod.Name, options); err != nil {
+					err := deletePodAndRelatedService(pod.Name, podClient, ctx, options, serviceClient)
+					if err != nil {
 						return err
 					}
 				}
 				return nil
 			}
 
-			if err := kubeclient.Delete(ctx, name, options); err != nil {
+			err = deletePodAndRelatedService(name, podClient, ctx, options, serviceClient)
+			if err != nil {
 				return err
 			}
+
 			return nil
 		},
 	}
@@ -95,6 +99,19 @@ to quickly create a Cobra application.`,
 	cmd.PersistentFlags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
+}
+
+func deletePodAndRelatedService(name string, podClient v1.PodInterface, ctx context.Context, options metav1.DeleteOptions, serviceClient v1.ServiceInterface) error {
+	fmt.Printf("Deleting Pod %s \n", name)
+	if err := podClient.Delete(ctx, name, options); err != nil {
+		return err
+	}
+
+	fmt.Printf("Deleting Service %s \n", name)
+	if err := serviceClient.Delete(ctx, name, options); err != nil {
+		return err
+	}
+	return nil
 }
 
 func init() {
