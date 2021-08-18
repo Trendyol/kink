@@ -19,6 +19,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/k0kubun/go-ansi"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/types"
@@ -185,9 +187,21 @@ to quickly create a Cobra application.`,
 				panic(err)
 			}
 
+			bar := progressbar.NewOptions(timeout,
+				progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
+				progressbar.OptionEnableColorCodes(true),
+				progressbar.OptionShowBytes(true),
+				progressbar.OptionSetWidth(15),
+				progressbar.OptionSetDescription(fmt.Sprintf("[cyan][1/3][reset] Creating Pod %s...", podName)),
+				progressbar.OptionSetTheme(progressbar.Theme{
+					Saucer:        "[green]=[reset]",
+					SaucerHead:    "[green]>[reset]",
+					SaucerPadding: " ",
+					BarStart:      "[",
+					BarEnd:        "]",
+				}))
 			err = wait.PollImmediate(time.Second, time.Duration(timeout)*time.Second, func() (done bool, err error) {
-				fmt.Printf(".") // progress bar!
-
+				bar.Add(1)
 				pod, err := kubeclient.Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					return false, err
@@ -199,7 +213,7 @@ to quickly create a Cobra application.`,
 				}
 
 				for _, cs := range pod.Status.ContainerStatuses {
-					if cs.Ready {
+					if cs.Ready && *cs.Started {
 						return true, nil
 					}
 				}
