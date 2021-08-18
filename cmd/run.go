@@ -19,7 +19,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/ghodss/yaml"
 	"io"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapilatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	"log"
 	"net/url"
 	"os"
@@ -45,7 +49,7 @@ import (
 
 // NewCmdRun represents the run command
 func NewCmdRun() *cobra.Command {
-	var k8sVersion, namespace, outputPath string
+	var k8sVersion, namespace, outputPath, clusterName string
 	var timeout int
 
 	var cmd = &cobra.Command{
@@ -73,6 +77,10 @@ func NewCmdRun() *cobra.Command {
 			hostname, err := os.Hostname()
 			if err != nil {
 				return err
+			}
+
+			if clusterName == "" {
+				clusterName = "kind-" + string(generatedUUID)
 			}
 
 			runnedByLabel := fmt.Sprintf("%s_%s", currentUser.Username, hostname)
@@ -138,6 +146,10 @@ func NewCmdRun() *cobra.Command {
 											FieldPath: "status.hostIP",
 										},
 									},
+								},
+								{
+									Name:  "KIND_CLUSTER_NAME",
+									Value: clusterName,
 								},
 							},
 							Resources: corev1.ResourceRequirements{},
@@ -282,7 +294,30 @@ func NewCmdRun() *cobra.Command {
 
 			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
 
-			err = os.WriteFile(kubeconfigPath, []byte(kubeconfig), 0600)
+			tmpKubeconfigPath := filepath.Join("tmp", "kubeconfig")
+			err = WriteFile(tmpKubeconfigPath, []byte(kubeconfig), 0600)
+
+			kubeConfigs := []string{kubeconfigPath, tmpKubeconfigPath}
+			rules := clientcmd.ClientConfigLoadingRules{
+				Precedence: kubeConfigs,
+			}
+
+			mergedConfig, err := rules.Load()
+			if err != nil {
+				return err
+			}
+
+			encode, err := runtime.Encode(clientcmdapilatest.Codec, mergedConfig)
+			if err != nil {
+				return err
+			}
+
+			merged, err := yaml.JSONToYAML(encode)
+			if err != nil {
+				return err
+			}
+
+			err = WriteFile(kubeconfigPath, merged, 0600)
 			if err != nil {
 				return err
 			}
@@ -306,6 +341,7 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, podName, namespace
 	cmd.Flags().StringVarP(&k8sVersion, "kubernetes-version", "k", types.ImageTag, "Desired version of Kubernetes")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
 	cmd.Flags().StringVarP(&outputPath, "output-path", "o", currDir, "Output path for kubeconfig")
+	cmd.Flags().StringVarP(&clusterName, "name", "", "", "The name for cluster")
 	cmd.Flags().IntVarP(&timeout, "timeout", "t", 30, "timeout for wait")
 
 	return cmd
@@ -340,6 +376,18 @@ func doExec(podName string, namespace string, container string, command []string
 	err = execute("POST", execReq.URL(), config, nil, &stdout, &stderr, false)
 
 	return strings.TrimSpace(stdout.String()), nil
+}
+
+func WriteFile(path string, data []byte, perm os.FileMode) error {
+	if index := strings.LastIndex(path, "/"); index != -1 {
+		dir := path[:index+1]
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			if err := os.MkdirAll(dir, 0744); err != nil {
+				return err
+			}
+		}
+	}
+	return os.WriteFile(path, data, perm)
 }
 
 func execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
