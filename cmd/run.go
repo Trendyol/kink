@@ -37,6 +37,7 @@ import (
 	"net/url"
 	"os"
 	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -61,13 +62,13 @@ to quickly create a Cobra application.`,
 				return err
 			}
 
-			kubeclient := client.CoreV1().Pods(namespace)
+			podClient := client.CoreV1().Pods(namespace)
 
-			uuid := uuid.NewUUID()
+			generatedUUID := uuid.NewUUID()
 
-			podName := "kind-cluster-" + string(uuid)
+			podName := "kind-cluster-" + string(generatedUUID)
 
-			user, err := user.Current()
+			currentUser, err := user.Current()
 			if err != nil {
 				return err
 			}
@@ -77,7 +78,12 @@ to quickly create a Cobra application.`,
 				return err
 			}
 
-			kindCluster := &corev1.Pod{
+			runnedByLabel := fmt.Sprintf("%s_%s", currentUser.Username, hostname)
+			labels := map[string]string{
+				"runned-by":      runnedByLabel,
+				"generated-uuid": string(generatedUUID),
+			}
+			podObj := &corev1.Pod{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Pod",
 					APIVersion: "v1",
@@ -85,9 +91,7 @@ to quickly create a Cobra application.`,
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        podName,
 					Annotations: kubernetes.ManagedAnnotations(),
-					Labels: map[string]string{
-						"runned-by": fmt.Sprintf("%s_%s", user.Username, hostname),
-					},
+					Labels:      labels,
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -182,9 +186,9 @@ to quickly create a Cobra application.`,
 
 			// Manage resource
 			ctx := context.TODO()
-			_, err = kubeclient.Create(ctx, kindCluster, metav1.CreateOptions{})
+			_, err = podClient.Create(ctx, podObj, metav1.CreateOptions{})
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 			bar := progressbar.NewOptions(timeout,
@@ -192,7 +196,7 @@ to quickly create a Cobra application.`,
 				progressbar.OptionEnableColorCodes(true),
 				progressbar.OptionShowBytes(true),
 				progressbar.OptionSetWidth(15),
-				progressbar.OptionSetDescription(fmt.Sprintf("[cyan][1/3][reset] Creating Pod %s...", podName)),
+				progressbar.OptionSetDescription(fmt.Sprintf("[cyan][1/1][reset] Creating Pod %s...", podName)),
 				progressbar.OptionSetTheme(progressbar.Theme{
 					Saucer:        "[green]=[reset]",
 					SaucerHead:    "[green]>[reset]",
@@ -202,7 +206,7 @@ to quickly create a Cobra application.`,
 				}))
 			err = wait.PollImmediate(time.Second, time.Duration(timeout)*time.Second, func() (done bool, err error) {
 				bar.Add(1)
-				pod, err := kubeclient.Get(ctx, podName, metav1.GetOptions{})
+				pod, err := podClient.Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					return false, err
 				}
@@ -225,38 +229,78 @@ to quickly create a Cobra application.`,
 				log.Fatalf("the pod never entered running phase: %v\n", err)
 			}
 
-			const tty = false
-			req := client.CoreV1().RESTClient().Post().
-				Resource("pods").
-				Name(podName).
-				Namespace(namespace).
-				SubResource("exec").
-				Param("container", "kind-cluster")
-
-			req.VersionedParams(&corev1.PodExecOptions{
-				Container: "kind-cluster",
-				Command:   []string{"kubectl", "config", "view", "--minify", "--flatten"},
-				Stdin:     false,
-				Stdout:    true,
-				Stderr:    true,
-				TTY:       tty,
-			}, scheme.ParameterCodec)
-
-			var stdout, stderr bytes.Buffer
-			config, err := kubernetes.RestClientConfig()
+			kubeconfig, err := doExec(podName, namespace, "kind-cluster", []string{"kubectl", "config", "view", "--minify", "--flatten"})
 			if err != nil {
 				return err
 			}
-			err = execute("POST", req.URL(), config, nil, &stdout, &stderr, tty)
 
-			fmt.Println(strings.TrimSpace(stdout.String()))
+			hostIP, err := doExec(podName, namespace, "kind-cluster", []string{"sh", "-c", "echo $CERT_SANS"})
+			if err != nil {
+				return err
+			}
+
+			podIP, err := doExec(podName, namespace, "kind-cluster", []string{"sh", "-c", "echo $API_SERVER_ADDRESS"})
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("replacing ips %s --> %s\n", podIP, hostIP)
+			kubeconfig = strings.ReplaceAll(kubeconfig, podIP, hostIP)
+
+			serviceClient := client.CoreV1().Services("default")
+
+			// Create resource object
+			serviceObj := &corev1.Service{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Service",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      podName,
+					Namespace: namespace,
+					Labels:    labels,
+				},
+				Spec: corev1.ServiceSpec{
+					Ports: []corev1.ServicePort{
+						{
+							Port: 30001,
+							TargetPort: intstr.IntOrString{
+								Type:   intstr.Type(0),
+								IntVal: 30001,
+							},
+						},
+					},
+					Selector: labels,
+					Type:     corev1.ServiceType("NodePort"),
+				},
+			}
+
+			// Manage resource
+			createdService, err := serviceClient.Create(context.TODO(), serviceObj, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("Service Created successfully!")
+			nodePort := createdService.Spec.Ports[0].NodePort
+			kubeconfig = strings.ReplaceAll(kubeconfig, "30001", fmt.Sprint(nodePort))
+
+			fmt.Printf("replacing ports %s --> %s\n", "30001", fmt.Sprint(nodePort))
+			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
+
+			fmt.Println(kubeconfig)
+
+			err = os.WriteFile(kubeconfigPath, []byte(kubeconfig), 0600)
+			if err != nil {
+				return err
+			}
 
 			fmt.Printf(`Thanks for using kink.
 Pod %s created successfully!
 You can view the logs by running the following command:
 $ kubectl logs -f %s -n %s 
-$ You can start using your internal KinD cluster by running the following command:
-$ KUBECONFIG=%s kubectl get nodes -o wide`, outputPath+"/kubeconfig", podName, podName, namespace)
+$ You can start managing your internal KinD cluster by running the following command:
+$ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, namespace, kubeconfigPath)
 			return nil
 		},
 	}
@@ -272,6 +316,37 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, outputPath+"/kubeconfig", podName, p
 	cmd.Flags().IntVarP(&timeout, "timeout", "t", 30, "timeout for wait")
 
 	return cmd
+}
+
+func doExec(podName string, namespace string, container string, command []string) (string, error) {
+	client, err := kubernetes.Client()
+	if err != nil {
+		return "", fmt.Errorf("getting client config for Kubernetes client: %w", err)
+	}
+	execReq := client.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podName).
+		Namespace(namespace).
+		SubResource("exec").
+		Param("container", container)
+
+	execReq.VersionedParams(&corev1.PodExecOptions{
+		Container: container,
+		Command:   command,
+		Stdin:     false,
+		Stdout:    true,
+		Stderr:    true,
+		TTY:       false,
+	}, scheme.ParameterCodec)
+
+	var stdout, stderr bytes.Buffer
+	config, err := kubernetes.RestClientConfig()
+	if err != nil {
+		return "", err
+	}
+	err = execute("POST", execReq.URL(), config, nil, &stdout, &stderr, false)
+
+	return strings.TrimSpace(stdout.String()), nil
 }
 
 func execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
