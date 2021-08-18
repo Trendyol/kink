@@ -19,12 +19,20 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"log"
+	"net/url"
+	"os"
+	"os/user"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/k0kubun/go-ansi"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/types"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -33,13 +41,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"log"
-	"net/url"
-	"os"
-	"os/user"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 // NewCmdRun represents the run command
@@ -49,13 +50,9 @@ func NewCmdRun() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:   "run",
-		Short: "A brief description of your command",
-		Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+		Short: "Ephemeral cluster could be created by run command",
+		Long: `It enables to create a cluster inside Kubernetes. Example command is shown below
+		kink run <>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := kubernetes.Client()
 			if err != nil {

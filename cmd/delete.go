@@ -18,12 +18,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/user"
+
 	"github.com/spf13/cobra"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
-	"os"
-	"os/user"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // NewCmdDelete represents the delete command
@@ -33,13 +34,9 @@ func NewCmdDelete() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:   "delete",
-		Short: "A brief description of your command",
-		Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+		Short: "Ephemeral cluster could be deleted by delete command",
+		Long: `You can delete kink cluster by using delete command
+		usage:	kink delete`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := kubernetes.Client()
 			if err != nil {

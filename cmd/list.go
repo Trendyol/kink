@@ -18,11 +18,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/user"
+
 	"github.com/spf13/cobra"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"os/user"
 )
 
 // NewCmdList represents the list command
@@ -31,13 +32,9 @@ func NewCmdList() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:   "list",
-		Short: "A brief description of your command",
-		Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+		Short: "List all ephemeral cluster",
+		Long: `List all ephemeral cluster
+		usage: kink list`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := kubernetes.Client()
 			if err != nil {
