@@ -35,6 +35,7 @@ func NewCmdList() *cobra.Command {
 		Short: "List all ephemeral cluster",
 		Long: `List all ephemeral cluster
 		usage: kink list`,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := kubernetes.Client()
 			if err != nil {

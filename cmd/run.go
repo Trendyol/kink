@@ -57,6 +57,7 @@ func NewCmdRun() *cobra.Command {
 		Short: "Ephemeral cluster could be created by run command",
 		Long: `It enables to create a cluster inside Kubernetes. Example command is shown below
 		kink run <>`,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := kubernetes.Client()
 			if err != nil {
@@ -213,6 +214,7 @@ func NewCmdRun() *cobra.Command {
 					BarStart:      "[",
 					BarEnd:        "]",
 				}))
+
 			err = wait.PollImmediate(time.Second, time.Duration(timeout)*time.Second, func() (done bool, err error) {
 				bar.Add(1)
 				pod, err := podClient.Get(ctx, podName, metav1.GetOptions{})
@@ -225,17 +227,21 @@ func NewCmdRun() *cobra.Command {
 					return false, wait.ErrWaitTimeout
 				}
 
-				for _, cs := range pod.Status.ContainerStatuses {
-					if cs.Ready && *cs.Started {
-						return true, nil
-					}
+				if isContainersReady(pod) {
+					bar.Finish()
+					return true, nil
 				}
 
 				return false, nil
 			})
 
 			if err != nil {
-				log.Fatalf("the pod never entered running phase: %v\n", err)
+				log.Printf("the pod never entered running phase: %v\n", err)
+				log.Println("rolling back the operation...")
+				err = podClient.Delete(ctx, podName, metav1.DeleteOptions{})
+				if err != nil {
+					log.Fatalf("could not delete the Pod: %q", err)
+				}
 			}
 
 			kubeconfig, err := doExec(podName, namespace, "kind-cluster", []string{"kubectl", "config", "view", "--minify", "--flatten"})
@@ -294,6 +300,7 @@ func NewCmdRun() *cobra.Command {
 
 			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
 
+			//FIXME: use ioutils.TempDir
 			tmpKubeconfigPath := filepath.Join("tmp", "kubeconfig")
 			err = WriteFile(tmpKubeconfigPath, []byte(kubeconfig), 0600)
 
@@ -322,12 +329,15 @@ func NewCmdRun() *cobra.Command {
 				return err
 			}
 
-			fmt.Printf(`Thanks for using kink.
+			println()
+			fmt.Printf(`Thanks for using kink!
 Pod %s and Service %s created successfully!
+
 You can view the logs by running the following command:
 $ kubectl logs -f %s -n %s 
-Kubeconfig file generated at path %s. 
-Now, you can start managing your internal KinD cluster by running the following command:
+
+KUBECONFIG file generated at path '%s'. 
+Start managing your internal KinD cluster by running the following command:
 $ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, podName, namespace, kubeconfigPath, kubeconfigPath)
 			return nil
 		},
@@ -342,7 +352,7 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, podName, namespace
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
 	cmd.Flags().StringVarP(&outputPath, "output-path", "o", currDir, "Output path for kubeconfig")
 	cmd.Flags().StringVarP(&clusterName, "name", "", "", "The name for cluster")
-	cmd.Flags().IntVarP(&timeout, "timeout", "t", 30, "timeout for wait")
+	cmd.Flags().IntVarP(&timeout, "timeout", "t", 240, "timeout for wait")
 
 	return cmd
 }
@@ -401,6 +411,15 @@ func execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, 
 		Stderr: stderr,
 		Tty:    tty,
 	})
+}
+
+func isContainersReady(pod *corev1.Pod) bool {
+	for _, cs := range pod.Status.ContainerStatuses {
+		if !cs.Ready || !*cs.Started {
+			return false
+		}
+	}
+	return true
 }
 
 func ptrbool(p bool) *bool {

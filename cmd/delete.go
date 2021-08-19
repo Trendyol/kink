@@ -18,14 +18,16 @@ package cmd
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"log"
 	"os"
 	"os/user"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"github.com/AlecAivazis/survey/v2"
 )
 
 // NewCmdDelete represents the delete command
@@ -38,6 +40,7 @@ func NewCmdDelete() *cobra.Command {
 		Short: "Ephemeral cluster could be deleted by delete command",
 		Long: `You can delete kink cluster by using delete command
 		usage:	kink delete`,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := kubernetes.Client()
 			if err != nil {
@@ -73,68 +76,80 @@ func NewCmdDelete() *cobra.Command {
 					return err
 				}
 
-				for _, pod := range pods.Items {
-					err := deletePodAndRelatedService(pod.Name, podClient, ctx, options, serviceClient)
+				for _, p := range pods.Items {
+					err := deletePodAndRelatedService(&p, podClient, ctx, options, serviceClient)
 					if err != nil {
 						return err
 					}
 				}
 				return nil
-			}
+			} else {
+				//TODO: fzf? kink list?
+				if name == "" {
+					log.Fatalln("you must provide a pod name via '--name'")
+				}
 
-			err = deletePodAndRelatedService(name, podClient, ctx, options, serviceClient)
-			if err != nil {
-				return err
+				p, err := podClient.Get(ctx, name, metav1.GetOptions{})
+				if err != nil {
+					return fmt.Errorf("could not get pod: %v", err)
+				}
+
+				err = deletePodAndRelatedService(p, podClient, ctx, options, serviceClient)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&all, "all", "a", false, "All pods")
-	cmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
-	cmd.PersistentFlags().StringVarP(&name, "name", "", "", "Target pod name")
-	cmd.PersistentFlags().BoolVarP(&force, "force", "f", false, "force delete")
+	cmd.Flags().BoolVarP(&all, "all", "a", false, "All pods")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&name, "name", "", "", "Target pod name")
+	cmd.Flags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
 }
 
-
-func deletePodAndRelatedService(name string, podClient v1.PodInterface, ctx context.Context, options metav1.DeleteOptions, serviceClient v1.ServiceInterface) error {
-
-
-	pod, _ := podClient.Get(ctx, name, metav1.GetOptions{})
-	podStatusPhase := string(pod.Status.Phase)
-
-	fmt.Println("Pod status is : ", podStatusPhase)
-
-	switch podStatusPhase {
-	case "Pending":
-		fmt.Println("Pod has already pending")
-
-	case "Running":
-
-	}
-
-
+func deletePodAndRelatedService(pod *corev1.Pod, podClient v1.PodInterface, ctx context.Context, options metav1.DeleteOptions, serviceClient v1.ServiceInterface) error {
 	var deleteConfirm bool
 	prompt := &survey.Confirm{
-		Message:  fmt.Sprintf("Pod %s and Service %s will be deleted... Do you accept ?", name, name),
+		Message: fmt.Sprintf("Pod %s and Service %s will be deleted... Do you accept?", pod.Name, pod.Name),
 	}
-	survey.AskOne(prompt, &deleteConfirm)
+	err := survey.AskOne(prompt, &deleteConfirm)
+	if err != nil {
+		return err
+	}
 
 	if deleteConfirm {
-		fmt.Printf("Deleting Pod %s \n", name)
-		if err := podClient.Delete(ctx, name, options); err != nil {
-			return err
+		shouldDelete := isContainersReady(pod)
+		var forceDelete bool
+		if !shouldDelete {
+			p2 := &survey.Confirm{
+				Message: fmt.Sprintf("Pod is not ready yet. Do you want to force delete?"),
+			}
+			err := survey.AskOne(p2, &forceDelete)
+			if err != nil {
+				return err
+			}
 		}
+		if shouldDelete || forceDelete {
+			fmt.Printf("Deleting Pod %s\n", pod.Name)
+			if err := podClient.Delete(ctx, pod.Name, options); err != nil {
+				return fmt.Errorf("deleting pod: %q", err)
+			}
 
-		fmt.Printf("Deleting Service %s \n", name)
-		if err := serviceClient.Delete(ctx, name, options); err != nil {return err}
-
-
+			if shouldDelete {
+				fmt.Printf("Deleting Service %s\n", pod.Name)
+				if err := serviceClient.Delete(ctx, pod.Name, options); err != nil {
+					return fmt.Errorf("deleting service: %q", err)
+				}
+			}
+		}
+	} else {
+		fmt.Println("Delete operation is discarded")
 	}
-	fmt.Println("Delete operation is discarted")
 
 	return nil
 }
