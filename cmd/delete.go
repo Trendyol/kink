@@ -25,6 +25,7 @@ import (
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"github.com/AlecAivazis/survey/v2"
 )
 
 // NewCmdDelete represents the delete command
@@ -98,16 +99,43 @@ func NewCmdDelete() *cobra.Command {
 	return cmd
 }
 
+
 func deletePodAndRelatedService(name string, podClient v1.PodInterface, ctx context.Context, options metav1.DeleteOptions, serviceClient v1.ServiceInterface) error {
-	fmt.Printf("Deleting Pod %s \n", name)
-	if err := podClient.Delete(ctx, name, options); err != nil {
-		return err
+
+
+	pod, _ := podClient.Get(ctx, name, metav1.GetOptions{})
+	podStatusPhase := string(pod.Status.Phase)
+
+	fmt.Println("Pod status is : ", podStatusPhase)
+
+	switch podStatusPhase {
+	case "Pending":
+		fmt.Println("Pod has already pending")
+
+	case "Running":
+
 	}
 
-	fmt.Printf("Deleting Service %s \n", name)
-	if err := serviceClient.Delete(ctx, name, options); err != nil {
-		return err
+
+	var deleteConfirm bool
+	prompt := &survey.Confirm{
+		Message:  fmt.Sprintf("Pod %s and Service %s will be deleted... Do you accept ?", name, name),
 	}
+	survey.AskOne(prompt, &deleteConfirm)
+
+	if deleteConfirm {
+		fmt.Printf("Deleting Pod %s \n", name)
+		if err := podClient.Delete(ctx, name, options); err != nil {
+			return err
+		}
+
+		fmt.Printf("Deleting Service %s \n", name)
+		if err := serviceClient.Delete(ctx, name, options); err != nil {return err}
+
+
+	}
+	fmt.Println("Delete operation is discarted")
+
 	return nil
 }
 
