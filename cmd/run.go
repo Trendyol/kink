@@ -19,11 +19,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"io"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapilatest "k8s.io/client-go/tools/clientcmd/api/latest"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -31,6 +28,11 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/ghodss/yaml"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapilatest "k8s.io/client-go/tools/clientcmd/api/latest"
 
 	"github.com/k0kubun/go-ansi"
 	"github.com/schollz/progressbar/v3"
@@ -300,9 +302,19 @@ func NewCmdRun() *cobra.Command {
 
 			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
 
-			//FIXME: use ioutils.TempDir
-			tmpKubeconfigPath := filepath.Join("tmp", "kubeconfig")
+			dname, err := ioutil.TempDir("", "kink_kubeconfig")
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(dname)
+			tmpKubeconfigPath := filepath.Join(dname, "kubeconfig")
 			err = WriteFile(tmpKubeconfigPath, []byte(kubeconfig), 0600)
+
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("KUBECONFIG file has been written to the directory: %s\n", tmpKubeconfigPath)
 
 			kubeConfigs := []string{kubeconfigPath, tmpKubeconfigPath}
 			rules := clientcmd.ClientConfigLoadingRules{
