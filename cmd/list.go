@@ -18,6 +18,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/printers"
 	"os"
 	"os/user"
 
@@ -62,9 +64,19 @@ func NewCmdList() *cobra.Command {
 				return err
 			}
 
+			p := printers.NewTablePrinter(printers.PrintOptions{
+				Kind:          schema.ParseGroupKind("Pod"),
+				WithKind:      true,
+				NoHeaders:     false,
+				Wide:          true,
+				WithNamespace: true,
+				ShowLabels:    true,
+			})
+
 			for _, pod := range pods.Items {
-				fmt.Println(pod.Name)
+				p.PrintObj(pod.DeepCopyObject(), os.Stdout)
 			}
+
 			return nil
 		},
 	}
