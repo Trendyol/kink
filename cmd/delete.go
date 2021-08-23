@@ -77,7 +77,7 @@ func NewCmdDelete() *cobra.Command {
 				}
 
 				for _, p := range pods.Items {
-					err := deletePodAndRelatedService(&p, podClient, ctx, options, serviceClient)
+					err := deletePodAndRelatedService(&p, podClient, ctx, options, serviceClient, force)
 					if err != nil {
 						return err
 					}
@@ -94,7 +94,7 @@ func NewCmdDelete() *cobra.Command {
 					return fmt.Errorf("could not get pod: %v", err)
 				}
 
-				err = deletePodAndRelatedService(p, podClient, ctx, options, serviceClient)
+				err = deletePodAndRelatedService(p, podClient, ctx, options, serviceClient, force)
 				if err != nil {
 					return err
 				}
@@ -112,18 +112,33 @@ func NewCmdDelete() *cobra.Command {
 	return cmd
 }
 
-func deletePodAndRelatedService(pod *corev1.Pod, podClient v1.PodInterface, ctx context.Context, options metav1.DeleteOptions, serviceClient v1.ServiceInterface) error {
+func deletePodAndRelatedService(pod *corev1.Pod, podClient v1.PodInterface, ctx context.Context, options metav1.DeleteOptions, serviceClient v1.ServiceInterface, force bool) error {
 	var deleteConfirm bool
 	prompt := &survey.Confirm{
 		Message: fmt.Sprintf("Pod %s and Service %s will be deleted... Do you accept?", pod.Name, pod.Name),
 	}
+	shouldDelete := isContainersReady(pod)
+
+	if force {
+		if err := podClient.Delete(ctx, pod.Name, options); err != nil {
+			return fmt.Errorf("deleting pod: %q", err)
+		}
+
+		if shouldDelete {
+			fmt.Printf("Deleting Service %s\n", pod.Name)
+			if err := serviceClient.Delete(ctx, pod.Name, options); err != nil {
+				return fmt.Errorf("deleting service: %q", err)
+			}
+		}
+		return nil
+	}
+
 	err := survey.AskOne(prompt, &deleteConfirm)
 	if err != nil {
 		return err
 	}
 
 	if deleteConfirm {
-		shouldDelete := isContainersReady(pod)
 		var forceDelete bool
 		if !shouldDelete {
 			p2 := &survey.Confirm{
