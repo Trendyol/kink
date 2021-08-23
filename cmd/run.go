@@ -431,7 +431,7 @@ func execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, 
 
 func isContainersReady(pod *corev1.Pod) bool {
 	for _, cs := range pod.Status.ContainerStatuses {
-		if !cs.Ready || !*cs.Started {
+		if !cs.Ready {
 			return false
 		}
 	}
