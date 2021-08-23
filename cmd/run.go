@@ -223,6 +223,7 @@ func NewCmdRun() *cobra.Command {
 
 			err = wait.PollImmediate(time.Second, time.Duration(timeout)*time.Second, func() (done bool, err error) {
 				bar.Add(1)
+
 				pod, err := podClient.Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					return false, err
@@ -431,11 +432,11 @@ func execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, 
 
 func isContainersReady(pod *corev1.Pod) bool {
 	for _, cs := range pod.Status.ContainerStatuses {
-		if !cs.Ready {
-			return false
+		if cs.Ready {
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 func ptrbool(p bool) *bool {
