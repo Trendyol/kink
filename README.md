@@ -1,11 +1,33 @@
-
-# kink (KinD in Kubernetes)
+# kink (abbreviation of **_KinD in Kubernetes_**)
 
 A helper CLI that facilitates to manage KinD clusters as Kubernetes pods
 
 <div align="center">
   <img width="300" height="400" src="https://github.com/marcusolsson/gophers/raw/master/viking.png">
 </div>
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [kink (KinD in Kubernetes)](#kink-kind-in-kubernetes)
+  - [Introduction](#introduction)
+  - [How it works ?](#how-it-works-)
+    - [Architectural Diagram](#architectural-diagram)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [List supported Kubernetes versions](#list-supported-kubernetes-versions)
+    - [Run KinD cluster](#run-kind-cluster)
+    - [List KinD clusters](#list-kind-clusters)
+    - [Delete KinD clusters](#delete-kind-clusters)
+  - [Autocompletion Support](#autocompletion-support)
+    - [Bash](#bash)
+    - [Zsh](#zsh)
+    - [fish](#fish)
+    - [PowerShell](#powershell)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 ## Introduction
 
@@ -40,12 +62,33 @@ and the resulting binary will be placed at $HOME/go/bin/kink.
 
 ## Quick Start
 
+```shell
+kink --help
+A helper CLI that facilitates to manage KinD clusters as Kubernetes pods
+
+Usage:
+  kink [command]
+
+Available Commands:
+  completion              Generate completion script
+  delete                  Ephemeral cluster could be deleted by delete command
+  help                    Help about any command
+  list                    List all ephemeral cluster
+  list-supported-versions List all supported k8s versions
+  run                     Ephemeral cluster could be created by run command
+
+Flags:
+  -h, --help   help for kink
+
+Use "kink [command] --help" for more information about a command.
+```
+
 This shows how to:
 
 * list supported Kubernetes versions
 * pick one of these versions and run KinD cluster
-* list
-* delete 
+* list KinD clusters
+* delete KinD clusters
 
 ### List supported Kubernetes versions
 
