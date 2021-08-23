@@ -94,6 +94,10 @@ This shows how to:
 
 ```shell
 $ kink list-supported-versions
+v1.16.0
+v1.17.0
+v1.18.0
+v1.20.0
 v1.21.2
 ```
 

@@ -34,9 +34,9 @@ func NewListSupportedVersionsCmd() *cobra.Command {
 			if len(args) > 0 {
 				return errors.New("you should not provide any arguments")
 			}
-			tags, err := crane.ListTags(types.ImageRepository)
+			tags, err := crane.ListTags(types.NodeImageRepository)
 			if err != nil {
-				return fmt.Errorf("reading tags for %s: %v", types.ImageRepository, err)
+				return fmt.Errorf("reading tags for %s: %v", types.NodeImageRepository, err)
 			}
 
 			for _, tag := range tags {

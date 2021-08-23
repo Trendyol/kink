@@ -1,5 +1,7 @@
 package types
 
 
+const NodeImageRepository = "registry.trendyol.com/platform/base/image/kind-node"
 const ImageRepository = "registry.trendyol.com/platform/base/image/kind-cluster"
-const ImageTag = "v1.21.2"
+const NodeImageTag = "v1.21.2"
+const ImageTag = "v0.0.1"

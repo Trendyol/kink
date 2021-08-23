@@ -121,7 +121,7 @@ func NewCmdRun() *cobra.Command {
 					Containers: []corev1.Container{
 						{
 							Name:  "kind-cluster",
-							Image: types.ImageRepository + ":" + k8sVersion,
+							Image: types.ImageRepository + ":" + types.ImageTag,
 							Args: []string{
 								"/bin/bash",
 							},
@@ -153,6 +153,10 @@ func NewCmdRun() *cobra.Command {
 								{
 									Name:  "KIND_CLUSTER_NAME",
 									Value: clusterName,
+								},
+								{
+									Name:  "KIND_NODE_IMAGE",
+									Value: types.NodeImageRepository + ":v" + k8sVersion,
 								},
 							},
 							Resources: corev1.ResourceRequirements{},
@@ -360,7 +364,7 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, podName, namespace
 		log.Fatalf("could not get current directory: %v\n", err)
 	}
 
-	cmd.Flags().StringVarP(&k8sVersion, "kubernetes-version", "k", types.ImageTag, "Desired version of Kubernetes")
+	cmd.Flags().StringVarP(&k8sVersion, "kubernetes-version", "k", types.NodeImageTag, "Desired version of Kubernetes")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
 	cmd.Flags().StringVarP(&outputPath, "output-path", "o", currDir, "Output path for kubeconfig")
 	cmd.Flags().StringVarP(&clusterName, "name", "", "", "The name for cluster")
