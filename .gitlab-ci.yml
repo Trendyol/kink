@@ -3,9 +3,9 @@ stages:
 
 goreleaser:
   stage: release
-  image: registry.trendyol.com/platform/base/image/alpine:3.12
+  image: registry.trendyol.com/platform/base/image/golang:1.16.0-alpine3.13
   script:
-    - apk add make curl git
+    - apk add make curl
     - curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
     - mv ./bin/goreleaser /usr/local/bin/goreleaser
     - ls -latr
