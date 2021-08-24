@@ -18,6 +18,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -61,6 +62,12 @@ func NewCmdRun() *cobra.Command {
 		kink run <>`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return errors.New("please provide a name as an argument")
+			}
+
+			name := args[0]
+
 			client, err := kubernetes.Client()
 			if err != nil {
 				return err
@@ -70,7 +77,7 @@ func NewCmdRun() *cobra.Command {
 
 			generatedUUID := uuid.NewUUID()
 
-			podName := "kind-cluster-" + string(generatedUUID)
+			//podName := "kind-cluster-" + string(generatedUUID)
 
 			currentUser, err := user.Current()
 			if err != nil {
@@ -97,7 +104,7 @@ func NewCmdRun() *cobra.Command {
 					APIVersion: "v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:        podName,
+					Name:        name,
 					Annotations: kubernetes.ManagedAnnotations(),
 					Labels:      labels,
 				},
@@ -212,7 +219,7 @@ func NewCmdRun() *cobra.Command {
 				progressbar.OptionEnableColorCodes(true),
 				progressbar.OptionShowBytes(true),
 				progressbar.OptionSetWidth(15),
-				progressbar.OptionSetDescription(fmt.Sprintf("[cyan][1/1][reset] Creating Pod %s...", podName)),
+				progressbar.OptionSetDescription(fmt.Sprintf("[cyan][1/1][reset] Creating Pod %s...", name)),
 				progressbar.OptionSetTheme(progressbar.Theme{
 					Saucer:        "[green]=[reset]",
 					SaucerHead:    "[green]>[reset]",
@@ -224,7 +231,7 @@ func NewCmdRun() *cobra.Command {
 			err = wait.PollImmediate(time.Second, time.Duration(timeout)*time.Second, func() (done bool, err error) {
 				bar.Add(1)
 
-				pod, err := podClient.Get(ctx, podName, metav1.GetOptions{})
+				pod, err := podClient.Get(ctx, name, metav1.GetOptions{})
 				if err != nil {
 					return false, err
 				}
@@ -245,23 +252,24 @@ func NewCmdRun() *cobra.Command {
 			if err != nil {
 				log.Printf("the pod never entered running phase: %v\n", err)
 				log.Println("rolling back the operation...")
-				err = podClient.Delete(ctx, podName, metav1.DeleteOptions{})
+				err = podClient.Delete(ctx, name, metav1.DeleteOptions{})
 				if err != nil {
 					log.Fatalf("could not delete the Pod: %q", err)
 				}
+				return nil
 			}
 
-			kubeconfig, err := doExec(podName, namespace, "kind-cluster", []string{"kubectl", "config", "view", "--minify", "--flatten"})
+			kubeconfig, err := doExec(name, namespace, "kind-cluster", []string{"kubectl", "config", "view", "--minify", "--flatten"}, nil)
 			if err != nil {
 				return err
 			}
 
-			hostIP, err := doExec(podName, namespace, "kind-cluster", []string{"sh", "-c", "echo $CERT_SANS"})
+			hostIP, err := doExec(name, namespace, "kind-cluster", []string{"sh", "-c", "echo $CERT_SANS"}, nil)
 			if err != nil {
 				return err
 			}
 
-			podIP, err := doExec(podName, namespace, "kind-cluster", []string{"sh", "-c", "echo $API_SERVER_ADDRESS"})
+			podIP, err := doExec(name, namespace, "kind-cluster", []string{"sh", "-c", "echo $API_SERVER_ADDRESS"}, nil)
 			if err != nil {
 				return err
 			}
@@ -277,7 +285,7 @@ func NewCmdRun() *cobra.Command {
 					APIVersion: "v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      podName,
+					Name:      name,
 					Namespace: namespace,
 					Labels:    labels,
 				},
@@ -346,7 +354,6 @@ func NewCmdRun() *cobra.Command {
 				return err
 			}
 
-			println()
 			fmt.Printf(`Thanks for using kink!
 Pod %s and Service %s created successfully!
 
@@ -355,7 +362,7 @@ $ kubectl logs -f %s -n %s
 
 KUBECONFIG file generated at path '%s'. 
 Start managing your internal KinD cluster by running the following command:
-$ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, podName, namespace, kubeconfigPath, kubeconfigPath)
+$ KUBECONFIG=%s kubectl get nodes -o wide`, name, name, name, namespace, kubeconfigPath, kubeconfigPath)
 			return nil
 		},
 	}
@@ -368,13 +375,13 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, podName, podName, podName, namespace
 	cmd.Flags().StringVarP(&k8sVersion, "kubernetes-version", "k", types.NodeImageTag, "Desired version of Kubernetes")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
 	cmd.Flags().StringVarP(&outputPath, "output-path", "o", currDir, "Output path for kubeconfig")
-	cmd.Flags().StringVarP(&clusterName, "name", "", "", "The name for cluster")
+	cmd.Flags().StringVarP(&clusterName, "cluster-name", "", "", "The name for cluster")
 	cmd.Flags().IntVarP(&timeout, "timeout", "t", 240, "timeout for wait")
 
 	return cmd
 }
 
-func doExec(podName string, namespace string, container string, command []string) (string, error) {
+func doExec(podName string, namespace string, container string, command []string, stdin io.Reader) (string, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
 		return "", fmt.Errorf("getting client config for Kubernetes client: %w", err)
@@ -389,7 +396,7 @@ func doExec(podName string, namespace string, container string, command []string
 	execReq.VersionedParams(&corev1.PodExecOptions{
 		Container: container,
 		Command:   command,
-		Stdin:     false,
+		Stdin:     stdin != nil,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
@@ -400,7 +407,7 @@ func doExec(podName string, namespace string, container string, command []string
 	if err != nil {
 		return "", err
 	}
-	err = execute("POST", execReq.URL(), config, nil, &stdout, &stderr, false)
+	err = execute("POST", execReq.URL(), config, stdin, &stdout, &stderr, false)
 
 	return strings.TrimSpace(stdout.String()), nil
 }

@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
-	"log"
 	"os"
 	"os/user"
 
@@ -33,7 +32,7 @@ import (
 // NewCmdDelete represents the delete command
 func NewCmdDelete() *cobra.Command {
 	var all, force bool
-	var name, namespace string
+	var namespace string
 
 	var cmd = &cobra.Command{
 		Use:   "delete",
@@ -50,6 +49,8 @@ func NewCmdDelete() *cobra.Command {
 			podClient := client.CoreV1().Pods(namespace)
 			serviceClient := client.CoreV1().Services(namespace)
 
+			ctx := context.TODO()
+
 			currentUser, err := user.Current()
 			if err != nil {
 				return err
@@ -60,18 +61,17 @@ func NewCmdDelete() *cobra.Command {
 				return err
 			}
 
+			pods, err := podClient.List(ctx, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", currentUser.Username, hostname)),
+			})
+
 			options := metav1.DeleteOptions{}
 			if force {
 				gracePeriodSeconds := int64(0)
 				options.GracePeriodSeconds = &gracePeriodSeconds
 			}
 
-			ctx := context.TODO()
 			if all {
-				pods, err := podClient.List(ctx, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", currentUser.Username, hostname)),
-				})
-
 				if err != nil {
 					return err
 				}
@@ -84,19 +84,31 @@ func NewCmdDelete() *cobra.Command {
 				}
 				return nil
 			} else {
-				//TODO: fzf? kink list?
-				if name == "" {
-					log.Fatalln("you must provide a pod name via '--name'")
+				var podNames []string
+
+				for _, pod := range pods.Items {
+					podNames = append(podNames, pod.Name)
 				}
 
-				p, err := podClient.Get(ctx, name, metav1.GetOptions{})
-				if err != nil {
-					return fmt.Errorf("could not get pod: %v", err)
+				var selectedNames []string
+				if !all {
+					prompt := &survey.MultiSelect{
+						Message: "What pod do you prefer to delete:",
+						Options: podNames,
+					}
+					survey.AskOne(prompt, &selectedNames)
 				}
 
-				err = deletePodAndRelatedService(p, podClient, ctx, options, serviceClient, force)
-				if err != nil {
-					return err
+				for _, name := range selectedNames {
+					p, err := podClient.Get(ctx, name, metav1.GetOptions{})
+					if err != nil {
+						return fmt.Errorf("could not get pod: %v", err)
+					}
+
+					err = deletePodAndRelatedService(p, podClient, ctx, options, serviceClient, force)
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -106,7 +118,6 @@ func NewCmdDelete() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&all, "all", "a", false, "All pods")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
-	cmd.Flags().StringVarP(&name, "name", "", "", "Target pod name")
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
