@@ -55,21 +55,21 @@ builds:
       - CC=x86_64-w64-mingw32-gcc
       - CXX=x86_64-w64-mingw32-g++
 
-dockers:
-  - image_templates: [ "registry.trendyol.com/platform/base/poc/kink:{{ .Version }}" ]
-    dockerfile: Dockerfile.goreleaser
-    use: buildx
-    goos: linux
-    goarch: amd64
-    build_flag_templates:
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://gitlab.com/goreleaser/example
-      - --label=org.opencontainers.image.source=https://gitlab.com/goreleaser/example
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.licenses=MIT
+#dockers:
+#  - image_templates: [ "registry.trendyol.com/platform/base/poc/kink:{{ .Version }}" ]
+#    dockerfile: Dockerfile.goreleaser
+#    use: buildx
+#    goos: linux
+#    goarch: amd64
+#    build_flag_templates:
+#      - --label=org.opencontainers.image.title={{ .ProjectName }}
+#      - --label=org.opencontainers.image.description={{ .ProjectName }}
+#      - --label=org.opencontainers.image.url=https://gitlab.com/goreleaser/example
+#      - --label=org.opencontainers.image.source=https://gitlab.com/goreleaser/example
+#      - --label=org.opencontainers.image.version={{ .Version }}
+#      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+#      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+#      - --label=org.opencontainers.image.licenses=MIT
 gomod:
   proxy: true
   env:
@@ -102,3 +102,8 @@ changelog:
       - 'README'
       - Merge pull request
       - Merge branch
+# .goreleaser.yml
+gitlab_urls:
+  api: https://gitlab.trendyol.com/api/v4/
+  download: https://gitlab.trendyol.com
+  skip_tls_verify: false

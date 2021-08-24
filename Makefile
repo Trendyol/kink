@@ -36,4 +36,5 @@ kink: $(SRCS)
 	CGO_ENABLED=0 go build -ldflags $(LDFLAGS) -o kink
 
 release:
-	LDFLAGS=$(LDFLAGS) GITLAB_TOKEN=$(GITLAB_TOKEN) goreleaser release --rm-dist
+	export GITLAB_TOKEN=$(GITLAB_TOKEN) && \
+	LDFLAGS=$(LDFLAGS) goreleaser release --rm-dist
