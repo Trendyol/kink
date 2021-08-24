@@ -72,6 +72,8 @@ dockers:
       - --label=org.opencontainers.image.licenses=MIT
 gomod:
   proxy: true
+  env:
+    - GOPRIVATE=gitlab.trendyol.com
 archives:
   - format: tar.gz
     replacements:
