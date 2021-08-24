@@ -107,3 +107,8 @@ gitlab_urls:
   api: https://gitlab.trendyol.com/api/v4/
   download: https://gitlab.trendyol.com
   skip_tls_verify: false
+release:
+  gitlab:
+    owner: ""
+    name: 8141
+  disable: false
