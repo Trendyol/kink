@@ -18,3 +18,5 @@ vendor/
 .idea
 kink
 
+
+dist/

@@ -1,0 +1,15 @@
+stages:
+  - release
+
+goreleaser:
+  stage: release
+  image: registry.trendyol.com/platform/base/image/alpine:3.12
+  script:
+    - apk add make curl
+    - curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
+    - mv ./bin/goreleaser /usr/local/bin/goreleaser
+    - ls -latr
+    - make release
+  only:
+    refs:
+      - tags

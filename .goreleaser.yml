@@ -1,0 +1,91 @@
+project_name: kink
+
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=1
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+builds:
+  - id: darwin-amd64
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    no_unique_dist_dir: true
+
+  - id: windows-amd64
+    goos:
+      - windows
+    goarch:
+      - amd64
+    ldflags:
+      - -buildmode=exe
+      - "{{ .Env.LDFLAGS }}"
+    no_unique_dist_dir: true
+
+  - id: linux-amd64
+    goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=0
+
+  - id: linux-368
+    goos:
+      - linux
+    goarch:
+      - "386"
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=0
+
+dockers:
+  - image_templates: ["registry.trendyol.com/platform/base/poc/kink:{{ .Version }}"]
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://gitlab.com/goreleaser/example
+      - --label=org.opencontainers.image.source=https://gitlab.com/goreleaser/example
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+gomod:
+  proxy: true
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: '{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}'
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+snapshot:
+  name_template: SNAPSHOT-{{.ShortCommit}}
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - 'README'
+      - Merge pull request
+      - Merge branch
