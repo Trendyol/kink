@@ -91,7 +91,7 @@ func NewCmdDelete() *cobra.Command {
 				}
 
 				var selectedNames []string
-				if !all {
+				if !force {
 					prompt := &survey.MultiSelect{
 						Message: "What pod do you prefer to delete:",
 						Options: podNames,
