@@ -3,12 +3,10 @@ stages:
 
 goreleaser:
   stage: release
-  image: registry.trendyol.com/platform/base/image/golang:1.16.0-alpine3.13
+  image:
+    name: registry.trendyol.com/platform/base/image/gythialy/golang-cross:v1.16.6@sha256:a31f3981571aab561bfdc2c50bf25142f2460a47c35e76ae9d50826e3a1aabac
+    entrypoint: [""]
   script:
-    - apk add make curl git
-    - curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
-    - mv ./bin/goreleaser /usr/local/bin/goreleaser
-    - ls -latr
     - make release
   only:
     refs:
