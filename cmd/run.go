@@ -196,7 +196,7 @@ func NewCmdRun() *cobra.Command {
 								SuccessThreshold:    1,
 								FailureThreshold:    15,
 							},
-							ImagePullPolicy: corev1.PullPolicy("Always"),
+							ImagePullPolicy: corev1.PullPolicy("IfNotPresent"),
 							SecurityContext: &corev1.SecurityContext{
 								Privileged: ptrbool(true),
 							},
