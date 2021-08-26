@@ -10,7 +10,7 @@ before:
     - go mod download
 builds:
   - id: linux-amd64
-    binary: kink
+    binary: kink-linux-{{ .Arch }}
     main: ./main.go
     goos:
       - linux
@@ -23,7 +23,7 @@ builds:
       - CGO_ENABLED=0
 
   - id: darwin-amd64
-    binary: kink
+    binary: kink-darwin-{{ .Arch }}
     main: ./main.go
     goos:
       - darwin
@@ -35,12 +35,9 @@ builds:
     env:
       - CC=o64-clang
       - CXX=o64-clang++
-    ignore:
-      - goos: darwin
-        goarch: 386
 
   - id: windows-amd64
-    binary: kink
+    binary: kink-windows-{{ .Arch }}
     main: ./main.go
     goos:
       - windows
@@ -51,25 +48,22 @@ builds:
       - "{{ .Env.LDFLAGS }}"
     no_unique_dist_dir: true
     env:
-      - CGO_ENABLED=1
       - CC=x86_64-w64-mingw32-gcc
       - CXX=x86_64-w64-mingw32-g++
-
-#dockers:
-#  - image_templates: [ "registry.trendyol.com/platform/base/poc/kink:{{ .Version }}" ]
-#    dockerfile: Dockerfile.goreleaser
-#    use: buildx
-#    goos: linux
-#    goarch: amd64
-#    build_flag_templates:
-#      - --label=org.opencontainers.image.title={{ .ProjectName }}
-#      - --label=org.opencontainers.image.description={{ .ProjectName }}
-#      - --label=org.opencontainers.image.url=https://gitlab.com/goreleaser/example
-#      - --label=org.opencontainers.image.source=https://gitlab.com/goreleaser/example
-#      - --label=org.opencontainers.image.version={{ .Version }}
-#      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-#      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-#      - --label=org.opencontainers.image.licenses=MIT
+dockers:
+  - image_templates: [ "registry.trendyol.com/platform/base/poc/kink:{{ .Tag }}" ]
+    dockerfile: Dockerfile.goreleaser
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://gitlab.com/goreleaser/example
+      - --label=org.opencontainers.image.source=https://gitlab.com/goreleaser/example
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
 gomod:
   proxy: true
   env:

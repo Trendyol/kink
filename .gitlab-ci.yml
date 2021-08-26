@@ -19,8 +19,11 @@ goreleaser:
       -w /kink \
       --entrypoint="/bin/sh" \
       -e GITLAB_TOKEN=$GITLAB_TOKEN \
-      registry.trendyol.com/platform/base/image/gythialy/golang-cross:v1.16.6@sha256:a31f3981571aab561bfdc2c50bf25142f2460a47c35e76ae9d50826e3a1aabac \
-      -c "GITLAB_TOKEN=$GITLAB_TOKEN make release"
+      -e DOCKER_REGISTRY=$DOCKER_REGISTRY \
+      -e DOCKER_USERNAME=$DOCKER_USERNAME \
+      -e DOCKER_PASSWORD=$DOCKER_PASSWORD \
+      registry.trendyol.com/platform/base/image/gythialy/golang-cross:v1.17 \
+      -c "echo $DOCKER_PASSWORD | docker login $DOCKER_REGISTRY -u $DOCKER_USERNAME --password-stdin && make release"
   only:
     refs:
       - tags
