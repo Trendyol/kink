@@ -13,18 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/printers"
 	"os"
 	"os/user"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/printers"
+
+	"github.com/Trendyol/kink/pkg/kubernetes"
 	"github.com/spf13/cobra"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,7 +34,7 @@ import (
 func NewCmdList() *cobra.Command {
 	var namespace string
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all ephemeral cluster",
 		Long: `List all ephemeral cluster
@@ -42,6 +44,15 @@ func NewCmdList() *cobra.Command {
 			client, err := kubernetes.Client()
 			if err != nil {
 				return err
+			}
+
+			if namespace == "" {
+				n, _, err := kubernetes.DefaultClientConfig().Namespace()
+				if err != nil {
+					return err
+				}
+
+				namespace = n
 			}
 
 			kubeclient := client.CoreV1().Pods(namespace)
@@ -59,7 +70,6 @@ func NewCmdList() *cobra.Command {
 			pods, err := kubeclient.List(context.TODO(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", user.Username, hostname)),
 			})
-
 			if err != nil {
 				return err
 			}
@@ -74,13 +84,13 @@ func NewCmdList() *cobra.Command {
 			})
 
 			for _, pod := range pods.Items {
-				p.PrintObj(pod.DeepCopyObject(), os.Stdout)
+				_ = p.PrintObj(pod.DeepCopyObject(), os.Stdout)
 			}
 
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 
 	return cmd
 }

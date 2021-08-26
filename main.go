@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "gitlab.trendyol.com/platform/base/poc/kink/cmd"
+import "github.com/Trendyol/kink/cmd"
 
 func main() {
 	cmd.Execute()

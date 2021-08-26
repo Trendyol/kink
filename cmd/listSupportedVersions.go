@@ -19,14 +19,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Trendyol/kink/pkg/types"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/spf13/cobra"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/types"
 )
 
 // NewListSupportedVersionsCmd represents the listSupportedVersions command
 func NewListSupportedVersionsCmd() *cobra.Command {
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "list-supported-versions",
 		Short: "List all supported k8s versions",
 		Long:  `You can checkout all supported k8s versions with list-supported-versions flag`,

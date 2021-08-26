@@ -17,20 +17,23 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/spf13/cobra"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/Trendyol/kink/pkg/kubernetes"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/spf13/cobra"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NewCmdLoad represents the load command
@@ -38,7 +41,7 @@ func NewCmdLoad() *cobra.Command {
 	var namespace, clusterName string
 	var dockerImages []string
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:          "load",
 		Short:        "Load Docker images into KinD cluster",
 		Long:         `It enables to load Docker images into KinD cluster`,
@@ -46,6 +49,15 @@ func NewCmdLoad() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("please provide a name as an argument")
+			}
+
+			if namespace == "" {
+				n, _, err := kubernetes.DefaultClientConfig().Namespace()
+				if err != nil {
+					return err
+				}
+
+				namespace = n
 			}
 
 			nameArg := args[0]
@@ -70,6 +82,27 @@ func NewCmdLoad() *cobra.Command {
 			defer os.RemoveAll(dir)
 			imagesTarPath := filepath.Join(dir, "images.tar")
 
+			for _, d := range dockerImages {
+				if err := isImageExistLocally(d); err != nil {
+					log.Printf("%s is not found locally, pulling...\n", d)
+					command := exec.Command("docker", []string{"image", "pull", d}...) // #nosec G204
+					stderr, _ := command.StdoutPipe()
+					if err := command.Start(); err != nil {
+						return err
+					}
+
+					scanner := bufio.NewScanner(stderr)
+					for scanner.Scan() {
+						fmt.Println(scanner.Text())
+					}
+
+					if err := command.Wait(); err != nil {
+						return err
+					}
+					log.Printf("%s pulled successfully\n", d)
+				}
+			}
+
 			err = save(dockerImages, imagesTarPath)
 			if err != nil {
 				return err
@@ -82,7 +115,7 @@ func NewCmdLoad() *cobra.Command {
 				return err
 			}
 
-			result, err := doExec(nameArg, namespace, "kind-cluster", []string{"docker", "load", "-i", containerPath}, nil)
+			result, err := doExec(nameArg, namespace, []string{"docker", "load", "-i", containerPath})
 			if err != nil {
 				return err
 			}
@@ -91,9 +124,11 @@ func NewCmdLoad() *cobra.Command {
 
 			for _, n := range dockerImages {
 				ref, err := name.ParseReference(n)
+				if err != nil {
+					return err
+				}
 				args := []string{"kind", "load", "docker-image", ref.Name(), "--name", clusterName, "-v", "8"}
-				result, err := doExec(nameArg, namespace, "kind-cluster", args, nil)
-
+				result, err := doExec(nameArg, namespace, args)
 				if err != nil {
 					return err
 				}
@@ -104,11 +139,23 @@ func NewCmdLoad() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "", "", "The name for cluster")
 	cmd.Flags().StringArrayVarP(&dockerImages, "docker-image", "", []string{}, "The name for Docker image to be load")
 
 	return cmd
+}
+
+// isImageExistLocally returns error if image is not found locally
+func isImageExistLocally(imageName string) error {
+	if err := exec.Command("docker", "image", "inspect",
+		"-f", "{{ .Id }}",
+		imageName, // ... against the container
+	).Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // save saves images to dest, as in `docker save`

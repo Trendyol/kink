@@ -19,11 +19,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"runtime"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 // Base version information.
@@ -44,7 +45,7 @@ var (
 
 func NewCmdVersion() *cobra.Command {
 	var outJSON bool
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:          "version",
 		Short:        "Prints the kink version",
 		Long:         `Prints the kink version`,

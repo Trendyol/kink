@@ -13,18 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
 	"context"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"os"
 	"os/user"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/Trendyol/kink/pkg/kubernetes"
 	"github.com/spf13/cobra"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -34,7 +36,7 @@ func NewCmdDelete() *cobra.Command {
 	var all, force bool
 	var namespace string
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Ephemeral cluster could be deleted by delete command",
 		Long: `You can delete kink cluster by using delete command
@@ -44,6 +46,15 @@ func NewCmdDelete() *cobra.Command {
 			client, err := kubernetes.Client()
 			if err != nil {
 				return err
+			}
+
+			if namespace == "" {
+				n, _, err := kubernetes.DefaultClientConfig().Namespace()
+				if err != nil {
+					return err
+				}
+
+				namespace = n
 			}
 
 			podClient := client.CoreV1().Pods(namespace)
@@ -77,38 +88,37 @@ func NewCmdDelete() *cobra.Command {
 				}
 
 				for _, p := range pods.Items {
-					err := deletePodAndRelatedService(&p, podClient, ctx, options, serviceClient, force)
+					err := deletePodAndRelatedService(ctx, p, podClient, options, serviceClient, force)
 					if err != nil {
 						return err
 					}
 				}
 				return nil
-			} else {
-				var podNames []string
+			}
+			var podNames []string
 
-				for _, pod := range pods.Items {
-					podNames = append(podNames, pod.Name)
+			for _, pod := range pods.Items {
+				podNames = append(podNames, pod.Name)
+			}
+
+			var selectedNames []string
+			if !force {
+				prompt := &survey.MultiSelect{
+					Message: "What pod do you prefer to delete:",
+					Options: podNames,
+				}
+				_ = survey.AskOne(prompt, &selectedNames)
+			}
+
+			for _, name := range selectedNames {
+				p, err := podClient.Get(ctx, name, metav1.GetOptions{})
+				if err != nil {
+					return fmt.Errorf("could not get pod: %v", err)
 				}
 
-				var selectedNames []string
-				if !force {
-					prompt := &survey.MultiSelect{
-						Message: "What pod do you prefer to delete:",
-						Options: podNames,
-					}
-					survey.AskOne(prompt, &selectedNames)
-				}
-
-				for _, name := range selectedNames {
-					p, err := podClient.Get(ctx, name, metav1.GetOptions{})
-					if err != nil {
-						return fmt.Errorf("could not get pod: %v", err)
-					}
-
-					err = deletePodAndRelatedService(p, podClient, ctx, options, serviceClient, force)
-					if err != nil {
-						return err
-					}
+				err = deletePodAndRelatedService(ctx, *p, podClient, options, serviceClient, force)
+				if err != nil {
+					return err
 				}
 			}
 
@@ -117,13 +127,13 @@ func NewCmdDelete() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&all, "all", "a", false, "All pods")
-	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
 }
 
-func deletePodAndRelatedService(pod *corev1.Pod, podClient v1.PodInterface, ctx context.Context, options metav1.DeleteOptions, serviceClient v1.ServiceInterface, force bool) error {
+func deletePodAndRelatedService(ctx context.Context, pod corev1.Pod, podClient v1.PodInterface, options metav1.DeleteOptions, serviceClient v1.ServiceInterface, force bool) error {
 	var deleteConfirm bool
 	prompt := &survey.Confirm{
 		Message: fmt.Sprintf("Pod %s and Service %s will be deleted... Do you accept?", pod.Name, pod.Name),
@@ -131,6 +141,7 @@ func deletePodAndRelatedService(pod *corev1.Pod, podClient v1.PodInterface, ctx 
 	shouldDelete := isContainersReady(pod)
 
 	if force {
+		fmt.Printf("Deleting Pod %s\n", pod.Name)
 		if err := podClient.Delete(ctx, pod.Name, options); err != nil {
 			return fmt.Errorf("deleting pod: %q", err)
 		}
@@ -153,7 +164,7 @@ func deletePodAndRelatedService(pod *corev1.Pod, podClient v1.PodInterface, ctx 
 		var forceDelete bool
 		if !shouldDelete {
 			p2 := &survey.Confirm{
-				Message: fmt.Sprintf("Pod is not ready yet. Do you want to force delete?"),
+				Message: "Pod is not ready yet. Do you want to force delete?",
 			}
 			err := survey.AskOne(p2, &forceDelete)
 			if err != nil {

@@ -1,0 +1,23 @@
+run:
+  concurrency: 4
+  timeout: 5m
+
+linters:
+  enable:
+    - asciicheck
+    - structcheck
+    - varcheck
+    - staticcheck
+    - stylecheck
+    - prealloc
+    - gofmt
+    - goimports
+    - golint
+    - gosec
+    - ineffassign
+    - vet
+    - unused
+    - unparam
+    - unconvert
+    - misspell
+    - revive

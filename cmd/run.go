@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
@@ -35,12 +36,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapilatest "k8s.io/client-go/tools/clientcmd/api/latest"
 
+	"github.com/Trendyol/kink/pkg/kubernetes"
+	"github.com/Trendyol/kink/pkg/types"
 	"github.com/k0kubun/go-ansi"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/types"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -55,7 +57,7 @@ func NewCmdRun() *cobra.Command {
 	var k8sVersion, namespace, outputPath, clusterName string
 	var timeout int
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Ephemeral cluster could be created by run command",
 		Long: `It enables to create a cluster inside Kubernetes. Example command is shown below
@@ -64,6 +66,15 @@ func NewCmdRun() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("please provide a name as an argument")
+			}
+
+			if namespace == "" {
+				n, _, err := kubernetes.DefaultClientConfig().Namespace()
+				if err != nil {
+					return err
+				}
+
+				namespace = n
 			}
 
 			name := args[0]
@@ -77,7 +88,7 @@ func NewCmdRun() *cobra.Command {
 
 			generatedUUID := uuid.NewUUID()
 
-			//podName := "kind-cluster-" + string(generatedUUID)
+			// podName := "kind-cluster-" + string(generatedUUID)
 
 			currentUser, err := user.Current()
 			if err != nil {
@@ -229,7 +240,7 @@ func NewCmdRun() *cobra.Command {
 				}))
 
 			err = wait.PollImmediate(time.Second, time.Duration(timeout)*time.Second, func() (done bool, err error) {
-				bar.Add(1)
+				_ = bar.Add(1)
 
 				pod, err := podClient.Get(ctx, name, metav1.GetOptions{})
 				if err != nil {
@@ -241,8 +252,8 @@ func NewCmdRun() *cobra.Command {
 					return false, wait.ErrWaitTimeout
 				}
 
-				if isContainersReady(pod) {
-					bar.Finish()
+				if isContainersReady(*pod) {
+					_ = bar.Finish()
 					return true, nil
 				}
 
@@ -259,17 +270,17 @@ func NewCmdRun() *cobra.Command {
 				return nil
 			}
 
-			kubeconfig, err := doExec(name, namespace, "kind-cluster", []string{"kubectl", "config", "view", "--minify", "--flatten"}, nil)
+			kubeconfig, err := doExec(name, namespace, []string{"kubectl", "config", "view", "--minify", "--flatten"})
 			if err != nil {
 				return err
 			}
 
-			hostIP, err := doExec(name, namespace, "kind-cluster", []string{"sh", "-c", "echo $CERT_SANS"}, nil)
+			hostIP, err := doExec(name, namespace, []string{"sh", "-c", "echo $CERT_SANS"})
 			if err != nil {
 				return err
 			}
 
-			podIP, err := doExec(name, namespace, "kind-cluster", []string{"sh", "-c", "echo $API_SERVER_ADDRESS"}, nil)
+			podIP, err := doExec(name, namespace, []string{"sh", "-c", "echo $API_SERVER_ADDRESS"})
 			if err != nil {
 				return err
 			}
@@ -305,12 +316,30 @@ func NewCmdRun() *cobra.Command {
 			}
 
 			// Manage resource
-			createdService, err := serviceClient.Create(context.TODO(), serviceObj, metav1.CreateOptions{})
+			svc, err := serviceClient.Create(ctx, serviceObj, metav1.CreateOptions{})
 			if err != nil {
-				return err
+				// if target service already exist, we do not need to create it again
+				if k8serrors.IsAlreadyExists(err) {
+					svcGet, err := serviceClient.Get(ctx, name, metav1.GetOptions{})
+					if err != nil {
+						return fmt.Errorf("could not get service: %w", err)
+					}
+
+					toUpdate := serviceObj.DeepCopy()
+					toUpdate.ObjectMeta = svcGet.ObjectMeta
+					toUpdate.Spec.ClusterIP = svcGet.Spec.ClusterIP
+					toUpdate.Spec.ClusterIPs = svcGet.Spec.ClusterIPs
+
+					svc, err = serviceClient.Update(ctx, toUpdate, metav1.UpdateOptions{})
+					if err != nil {
+						return fmt.Errorf("could not update service: %w", err)
+					}
+				} else {
+					return fmt.Errorf("could not create service: %w", err)
+				}
 			}
 
-			nodePort := createdService.Spec.Ports[0].NodePort
+			nodePort := svc.Spec.Ports[0].NodePort
 			kubeconfig = strings.ReplaceAll(kubeconfig, "30001", fmt.Sprint(nodePort))
 
 			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
@@ -321,7 +350,7 @@ func NewCmdRun() *cobra.Command {
 			}
 			defer os.RemoveAll(dname)
 			tmpKubeconfigPath := filepath.Join(dname, "kubeconfig")
-			err = WriteFile(tmpKubeconfigPath, []byte(kubeconfig), 0600)
+			err = WriteFile(tmpKubeconfigPath, []byte(kubeconfig), 0o600)
 
 			if err != nil {
 				return err
@@ -349,7 +378,7 @@ func NewCmdRun() *cobra.Command {
 				return err
 			}
 
-			err = WriteFile(kubeconfigPath, merged, 0600)
+			err = WriteFile(kubeconfigPath, merged, 0o600)
 			if err != nil {
 				return err
 			}
@@ -373,7 +402,7 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, name, name, name, namespace, kubecon
 	}
 
 	cmd.Flags().StringVarP(&k8sVersion, "kubernetes-version", "k", types.NodeImageTag, "Desired version of Kubernetes")
-	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.Flags().StringVarP(&outputPath, "output-path", "o", currDir, "Output path for kubeconfig")
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "", "", "The name for cluster")
 	cmd.Flags().IntVarP(&timeout, "timeout", "t", 240, "timeout for wait")
@@ -381,8 +410,9 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, name, name, name, namespace, kubecon
 	return cmd
 }
 
-func doExec(podName string, namespace string, container string, command []string, stdin io.Reader) (string, error) {
+func doExec(podName string, namespace string, command []string) (string, error) {
 	client, err := kubernetes.Client()
+	container := "kind-cluster"
 	if err != nil {
 		return "", fmt.Errorf("getting client config for Kubernetes client: %w", err)
 	}
@@ -396,7 +426,7 @@ func doExec(podName string, namespace string, container string, command []string
 	execReq.VersionedParams(&corev1.PodExecOptions{
 		Container: container,
 		Command:   command,
-		Stdin:     stdin != nil,
+		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
@@ -407,7 +437,11 @@ func doExec(podName string, namespace string, container string, command []string
 	if err != nil {
 		return "", err
 	}
-	err = execute("POST", execReq.URL(), config, stdin, &stdout, &stderr, false)
+
+	err = execute("POST", execReq.URL(), config, nil, &stdout, &stderr, false)
+	if err != nil {
+		return "", err
+	}
 
 	return strings.TrimSpace(stdout.String()), nil
 }
@@ -416,7 +450,7 @@ func WriteFile(path string, data []byte, perm os.FileMode) error {
 	if index := strings.LastIndex(path, "/"); index != -1 {
 		dir := path[:index+1]
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			if err := os.MkdirAll(dir, 0744); err != nil {
+			if err := os.MkdirAll(dir, 0o744); err != nil {
 				return err
 			}
 		}
@@ -437,7 +471,7 @@ func execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, 
 	})
 }
 
-func isContainersReady(pod *corev1.Pod) bool {
+func isContainersReady(pod corev1.Pod) bool {
 	for _, cs := range pod.Status.ContainerStatuses {
 		if cs.Ready {
 			return true

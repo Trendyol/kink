@@ -2,12 +2,17 @@ project_name: kink
 
 env:
   - GO111MODULE=on
-  - CGO_ENABLED=1
+  - CGO_ENABLED=0
+
+gomod:
+  proxy: true
 
 before:
   hooks:
     - go mod tidy
     - go mod download
+    - ./scripts/completions.sh
+
 builds:
   - id: linux-amd64
     binary: kink
@@ -17,10 +22,7 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - "{{ .Env.LDFLAGS }}"
-    no_unique_dist_dir: true
-    env:
-      - CGO_ENABLED=0
+      - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
 
   - id: darwin-amd64
     binary: kink
@@ -30,14 +32,17 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - "{{ .Env.LDFLAGS }}"
-    no_unique_dist_dir: true
-    env:
-      - CC=o64-clang
-      - CXX=o64-clang++
-    ignore:
-      - goos: darwin
-        goarch: 386
+      - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
+  
+  - id: darwin-arm64
+    binary: kink
+    main: ./main.go
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
 
   - id: windows-amd64
     binary: kink
@@ -47,52 +52,90 @@ builds:
     goarch:
       - amd64
     ldflags:
+      - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
       - -buildmode=exe
-      - "{{ .Env.LDFLAGS }}"
-    no_unique_dist_dir: true
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
 
-#dockers:
-#  - image_templates: [ "registry.trendyol.com/platform/base/poc/kink:{{ .Version }}" ]
-#    dockerfile: Dockerfile.goreleaser
-#    use: buildx
-#    goos: linux
-#    goarch: amd64
-#    build_flag_templates:
-#      - --label=org.opencontainers.image.title={{ .ProjectName }}
-#      - --label=org.opencontainers.image.description={{ .ProjectName }}
-#      - --label=org.opencontainers.image.url=https://gitlab.com/goreleaser/example
-#      - --label=org.opencontainers.image.source=https://gitlab.com/goreleaser/example
-#      - --label=org.opencontainers.image.version={{ .Version }}
-#      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-#      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-#      - --label=org.opencontainers.image.licenses=MIT
-gomod:
-  proxy: true
-  env:
-    - GOPRIVATE=gitlab.trendyol.com
+signs:
+  - cmd: cosign
+    stdin: '{{ .Env.COSIGN_PASSWORD }}'
+    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
+    artifacts: checksum
+
+docker_signs:
+  - artifacts: images
+    args: [ "sign", "-key=cosign.key", "${artifact}" ]
+    stdin: '{{ .Env.COSIGN_PASSWORD }}'
+
+dockers:
+  - image_templates: [ "ghcr.io/trendyol/{{ .ProjectName }}:{{ .Version }}-amd64" ]
+    dockerfile: Dockerfile.goreleaser
+    goos: linux
+    goarch: amd64
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/Trendyol/kink
+      - --label=org.opencontainers.image.source=https://github.com/Trendyol/kink
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+
+brews:
+  - tap:
+      owner: Trendyol
+      name: homebrew-trendyol-tap
+    homepage: https://github.com/trendyol
+    description: KinK is a helper CLI that facilitates to manage KinD clusters as Kubernetes pods. Designed to ease clusters up for fast testing with batteries included in mind.
+    license: MIT
+    test: |
+      system "#{bin}/kink version"
+    dependencies:
+      - name: go
+        type: optional
+      - name: git
+    install: |-
+      if build.head?
+        project = "github.com/Trendyol/kink"
+        ldflags = %W[
+          -s -w
+          -X #{project}/cmd.GitVersion=#{Utils.git_branch}
+          -X #{project}/cmd.gitCommit=#{Utils.git_short_head}
+          -X #{project}/cmd.gitTreeState=clean
+          -X #{project}/cmd.buildDate=#{Time.now.utc.iso8601}
+        ]
+        system "go", "build", *std_go_args(output: "kink", ldflags: ldflags.join(" ")), "main.go"
+        system "./scripts/completions.sh"
+      end
+      bin.install "kink"
+      bash_completion.install "completions/kink.bash" => "kink"
+      zsh_completion.install "completions/kink.zsh" => "_kink"
+      fish_completion.install "completions/kink.fish"
+    custom_block: |
+      head "https://github.com/Trendyol/kink.git", branch: "main"
+      head do
+        depends_on "go" => :build
+      end
+
 archives:
-  - format: tar.gz
-    replacements:
+  - replacements:
       darwin: Darwin
       linux: Linux
       windows: Windows
       386: i386
       amd64: x86_64
-    format_overrides:
-      - goos: windows
-        format: zip
     name_template: '{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}'
     files:
-      - README.md
-      - LICENSE
+      - completions/*
+
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
+
 snapshot:
   name_template: SNAPSHOT-{{.ShortCommit}}
+
 changelog:
   sort: asc
   filters:
@@ -102,13 +145,8 @@ changelog:
       - 'README'
       - Merge pull request
       - Merge branch
-# .goreleaser.yml
-gitlab_urls:
-  api: https://gitlab.trendyol.com/api/v4/
-  download: https://gitlab.trendyol.com
-  skip_tls_verify: false
+
 release:
-  gitlab:
-    owner: ""
-    name: 8141
-  disable: false
+  github:
+    owner: Trendyol
+    name: kink
