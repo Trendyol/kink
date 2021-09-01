@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -48,6 +49,15 @@ func NewCmdLoad() *cobra.Command {
 				return errors.New("please provide a name as an argument")
 			}
 
+			if namespace == "" {
+				n, _, err := kubernetes.DefaultClientConfig().Namespace()
+				if err != nil {
+					return err
+				}
+
+				namespace = n
+			}
+
 			nameArg := args[0]
 
 			client, err := kubernetes.Client()
@@ -69,6 +79,27 @@ func NewCmdLoad() *cobra.Command {
 			}
 			defer os.RemoveAll(dir)
 			imagesTarPath := filepath.Join(dir, "images.tar")
+
+			for _, d := range dockerImages {
+				if err := isImageExistLocally(d); err != nil {
+					log.Printf("%s is not found locally, pulling...\n", d)
+					command := exec.Command("docker", []string{"image", "pull", d}...)
+					stderr, _ := command.StdoutPipe()
+					if err := command.Start(); err != nil {
+						return err
+					}
+
+					scanner := bufio.NewScanner(stderr)
+					for scanner.Scan() {
+						fmt.Println(scanner.Text())
+					}
+
+					if err := command.Wait(); err != nil {
+						return err
+					}
+					log.Printf("%s pulled succesfully\n", d)
+				}
+			}
 
 			err = save(dockerImages, imagesTarPath)
 			if err != nil {
@@ -104,11 +135,23 @@ func NewCmdLoad() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "", "", "The name for cluster")
 	cmd.Flags().StringArrayVarP(&dockerImages, "docker-image", "", []string{}, "The name for Docker image to be load")
 
 	return cmd
+}
+
+// isImageExistLocally returns error if image is not found locally
+func isImageExistLocally(imageName string) error {
+	if err := exec.Command("docker", "image", "inspect",
+		"-f", "{{ .Id }}",
+		imageName, // ... against the container
+	).Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // save saves images to dest, as in `docker save`
