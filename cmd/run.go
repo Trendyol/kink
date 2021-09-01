@@ -41,6 +41,7 @@ import (
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
 	"gitlab.trendyol.com/platform/base/poc/kink/pkg/types"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -304,13 +305,32 @@ func NewCmdRun() *cobra.Command {
 				},
 			}
 
+
 			// Manage resource
-			createdService, err := serviceClient.Create(context.TODO(), serviceObj, metav1.CreateOptions{})
+			svc, err := serviceClient.Create(ctx, serviceObj, metav1.CreateOptions{})
 			if err != nil {
-				return err
+				// if target service already exist, we do not need to create it again
+				if k8serrors.IsAlreadyExists(err) {
+					svcGet, err := serviceClient.Get(ctx, name, metav1.GetOptions{})
+					if err != nil {
+						return fmt.Errorf("could not get service: %w", err)
+					}
+
+					toUpdate := serviceObj.DeepCopy()
+					toUpdate.ObjectMeta = svcGet.ObjectMeta
+					toUpdate.Spec.ClusterIP = svcGet.Spec.ClusterIP
+					toUpdate.Spec.ClusterIPs = svcGet.Spec.ClusterIPs
+
+					svc, err = serviceClient.Update(ctx, toUpdate, metav1.UpdateOptions{})
+					if err != nil {
+						return fmt.Errorf("could not update service: %w", err)
+					}
+				} else {
+					return fmt.Errorf("could not create service: %w", err)
+				}
 			}
 
-			nodePort := createdService.Spec.Ports[0].NodePort
+			nodePort := svc.Spec.Ports[0].NodePort
 			kubeconfig = strings.ReplaceAll(kubeconfig, "30001", fmt.Sprint(nodePort))
 
 			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
