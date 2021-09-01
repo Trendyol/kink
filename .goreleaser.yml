@@ -17,7 +17,7 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - "{{ .Env.LDFLAGS }}"
+      - -s -w -X gitlab.trendyol.com/platform/base/poc/kink/cmd.GitVersion={{ .Version }} -X gitlab.trendyol.com/platform/base/poc/kink/cmd.gitCommit={{ .ShortCommit }}  -X gitlab.trendyol.com/platform/base/poc/kink/cmd.buildDate={{ .CommitDate }}
     no_unique_dist_dir: true
     env:
       - CGO_ENABLED=0
@@ -30,7 +30,7 @@ builds:
     goarch:
       - amd64
     ldflags:
-      - "{{ .Env.LDFLAGS }}"
+      - -s -w -X gitlab.trendyol.com/platform/base/poc/kink/cmd.GitVersion={{ .Version }} -X gitlab.trendyol.com/platform/base/poc/kink/cmd.gitCommit={{ .ShortCommit }}  -X gitlab.trendyol.com/platform/base/poc/kink/cmd.buildDate={{ .CommitDate }}
     no_unique_dist_dir: true
     env:
       - CC=o64-clang
@@ -44,30 +44,30 @@ builds:
     goarch:
       - amd64
     ldflags:
+      - -s -w -X gitlab.trendyol.com/platform/base/poc/kink/cmd.GitVersion={{ .Version }} -X gitlab.trendyol.com/platform/base/poc/kink/cmd.gitCommit={{ .ShortCommit }}  -X gitlab.trendyol.com/platform/base/poc/kink/cmd.buildDate={{ .CommitDate }}
       - -buildmode=exe
-      - "{{ .Env.LDFLAGS }}"
     no_unique_dist_dir: true
     env:
       - CC=x86_64-w64-mingw32-gcc
       - CXX=x86_64-w64-mingw32-g++
 dockers:
-  - image_templates: [ "registry.trendyol.com/platform/base/poc/kink:{{ .Tag }}" ]
+  - image_templates: [ "ghcr.io/Trendyol/{{ .ProjectName }}:{{ .Version }}-amd64" ]
     dockerfile: Dockerfile.goreleaser
     goos: linux
     goarch: amd64
+    use: buildx
     build_flag_templates:
+      - --platform=linux/amd64
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://gitlab.com/goreleaser/example
-      - --label=org.opencontainers.image.source=https://gitlab.com/goreleaser/example
+      - --label=org.opencontainers.image.url=https://github.com/Trendyol/kink
+      - --label=org.opencontainers.image.source=https://github.com/Trendyol/kink
       - --label=org.opencontainers.image.version={{ .Version }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
 gomod:
   proxy: true
-  env:
-    - GOPRIVATE=gitlab.trendyol.com
 archives:
   - format: tar.gz
     replacements:
@@ -96,13 +96,3 @@ changelog:
       - 'README'
       - Merge pull request
       - Merge branch
-# .goreleaser.yml
-gitlab_urls:
-  api: https://gitlab.trendyol.com/api/v4/
-  download: https://gitlab.trendyol.com
-  skip_tls_verify: false
-release:
-  gitlab:
-    owner: ""
-    name: 8141
-  disable: false
