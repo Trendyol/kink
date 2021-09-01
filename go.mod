@@ -1,4 +1,4 @@
-module gitlab.trendyol.com/platform/base/poc/kink
+module github.com/Trendyol/kink
 
 go 1.17
 

@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
+	"github.com/Trendyol/kink/pkg/kubernetes"
 	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"

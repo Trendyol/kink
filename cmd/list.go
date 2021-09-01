@@ -25,7 +25,7 @@ import (
 	"os/user"
 
 	"github.com/spf13/cobra"
-	"gitlab.trendyol.com/platform/base/poc/kink/pkg/kubernetes"
+	"github.com/Trendyol/kink/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

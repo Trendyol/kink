@@ -67,14 +67,14 @@ and [Kubernetes](https://gitlab.trendyol.com/platform/base/poc/running-kind-clus
 . Then, **_kink_** allows you to create Kubernetes Pods based on Docker images we provide and connect to the cluster
 running inside a Pod. In order the connect to the cluster running inside a Pod, **_kink_** does some tricks such as
 creating **_Kubernetes Service_**
-and [adding node IP](https://gitlab.trendyol.com/platform/base/poc/kink/-/blob/master/cmd/run.go#L145-152) which is
+and [adding node IP](https://github.com/Trendyol/kink/-/blob/master/cmd/run.go#L145-152) which is
 scheduled on to
 the [CERT_SANS](https://gitlab.trendyol.com/platform/base/poc/running-kind-cluster-in-pod-images/-/blob/master/kind-cluster/entrypoint-wrapper.sh#L17)
 addresses to make the connection secure over HTTPS.
 
 > **_kink_** uses labels to follow the user activities because we have to provide multi-tenancy support for our users in order to avoid stepping each other toes in same Kubernetes environment,
 > you can see the label which we are currently using to achieve uniqueness.
-> https://gitlab.trendyol.com/platform/base/poc/kink/-/blob/master/cmd/run.go#L91
+> https://github.com/Trendyol/kink/-/blob/master/cmd/run.go#L91
 
 ## Installation
 
@@ -82,7 +82,7 @@ If you have Go 1.16+, you can directly install by running:
 
 ```shell
 export GOPRIVATE="gitlab.trendyol.com"
-go install gitlab.trendyol.com/platform/base/poc/kink@latest
+go install github.com/Trendyol/kink@latest
 ```
 
 and the resulting binary will be placed at $HOME/go/bin/kink.
