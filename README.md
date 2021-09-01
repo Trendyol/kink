@@ -1,10 +1,10 @@
-# kink (abbreviation of **_KinD in Kubernetes_**)
+<p align="center">
+  <img alt="kink Logo" src="https://github.com/marcusolsson/gophers/raw/master/viking.png?v=3&s=200" height="200" />
+  <h3 align="center">kink</h3>
+  <p align="center">A helper CLI that facilitates to manage KinD clusters as Kubernetes pods.</p>
+</p>
 
-<div align="center">
-  <img width="300" height="400" src="https://github.com/marcusolsson/gophers/raw/master/viking.png" alt="https://github.com/marcusolsson/gophers">
-</div>
-
-A helper CLI that facilitates to manage KinD clusters as Kubernetes pods
+---
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -80,16 +80,18 @@ addresses to make the connection secure over HTTPS.
 If you have Go 1.16+, you can directly install by running:
 
 ```shell
-export GOPRIVATE="gitlab.trendyol.com"
-go install github.com/Trendyol/kink@latest
+$ export GOPRIVATE="gitlab.trendyol.com"
+$ go install github.com/Trendyol/kink@latest
 ```
+
+**Note:** _Since we already sign the binaries and images using [cosign](https://github.com/sigstore/cosign), you can easily verify by using our [public key](https://raw.githubusercontent.com/Trendyol/kink/main/cosign.pub): `$ cosign verify -k ./cosign.pub] <FILE>`._
 
 and the resulting binary will be placed at $HOME/go/bin/kink.
 
 ## Quick Start
 
 ```shell
-kink --help
+$ kink --help
 A helper CLI that facilitates to manage KinD clusters as Kubernetes pods
 
 Usage:
@@ -102,11 +104,6 @@ Available Commands:
   list                    List all ephemeral cluster
   list-supported-versions List all supported k8s versions
   run                     Ephemeral cluster could be created by run command
-
-Flags:
-  -h, --help   help for kink
-
-Use "kink [command] --help" for more information about a command.
 ```
 
 This shows how to:
@@ -133,7 +130,7 @@ v1.21.2
 
 ```shell
 $ kind create cluster
-$  kink run --timeout 360
+$ kink run --timeout 360
 [1/1] Creating Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db... 100% [===============] (0.184 kB/s)
 KUBECONFIG file has been written to the directory: /var/folders/pf/6h9t0mnd4d342ncgpjq_3zl80000gp/T/kink_kubeconfig642727642/kubeconfig
 
@@ -152,7 +149,6 @@ $ KUBECONFIG=/Users/batuhan.apaydin/workspace/projects/trendyol/kink/kubeconfig 
 
 ```shell
 $ kink list
- kink list
 NAMESPACE   NAME                                                    AGE    LABELS
 default     pod/kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db   3d4h   generated-uuid=f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db,runned-by=batuhan.apaydin_C02DM1U3MD6R
 ```
@@ -163,8 +159,8 @@ default     pod/kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db   3d4h   gener
 
 ```shell
 $ kink delete --all --force
- Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db and Service kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db will be deleted... Do you accept? (y/N) y
- Deleting Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db
+Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db and Service kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db will be deleted... Do you accept? (y/N) y
+Deleting Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db
 ```
 
 * or you can delete one of them:
@@ -182,44 +178,44 @@ To load completions:
 ### Bash
 
 ```shell
-  $ source <(kink completion bash)
+$ source <(kink completion bash)
 
-  # To load completions for each session, execute once:
-  # Linux:
-  $ yourprogra completion bash > /etc/bash_completion.d/kink
-  # macOS:
-  $ kink completion bash > /usr/local/etc/bash_completion.d/kink
+# To load completions for each session, execute once:
+# Linux:
+$ yourprogra completion bash > /etc/bash_completion.d/kink
+# macOS:
+$ kink completion bash > /usr/local/etc/bash_completion.d/kink
 ```
 
 ### Zsh
 
 ```shell
-  # If shell completion is not already enabled in your environment,
-  # you will need to enable it.  You can execute the following once:
+# If shell completion is not already enabled in your environment,
+# you will need to enable it.  You can execute the following once:
 
-  $ echo "autoload -U compinit; compinit" >> ~/.zshrc
+$ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
-  # To load completions for each session, execute once:
-  $ kink completion zsh > "${fpath[1]}/_kink"
+# To load completions for each session, execute once:
+$ kink completion zsh > "${fpath[1]}/_kink"
 
-  # You will need to start a new shell for this setup to take effect.
+# You will need to start a new shell for this setup to take effect.
 ```
 
 ### fish
 
 ```shell
-  $ kink completion fish | source
+$ kink completion fish | source
 
-  # To load completions for each session, execute once:
-  $ kink completion fish > ~/.config/fish/completions/kink.fish
+# To load completions for each session, execute once:
+$ kink completion fish > ~/.config/fish/completions/kink.fish
 ```
 
 ### PowerShell
 
 ```shell
-  PS> kink completion powershell | Out-String | Invoke-Expression
+PS> kink completion powershell | Out-String | Invoke-Expression
 
-  # To load completions for every new session, run:
-  PS> kink completion powershell > kink.ps1
-  # and source this file from your PowerShell profile.
+# To load completions for every new session, run:
+PS> kink completion powershell > kink.ps1
+# and source this file from your PowerShell profile.
 ```

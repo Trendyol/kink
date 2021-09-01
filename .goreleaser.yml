@@ -43,6 +43,17 @@ builds:
       - -buildmode=exe
     no_unique_dist_dir: true
 
+signs:
+  - cmd: cosign
+    stdin: '{{ .Env.COSIGN_PASSWORD }}'
+    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
+    artifacts: binary
+
+docker_signs:
+  - artifacts: all
+    args: [ "sign", "-key=cosign.key", "${artifact}" ]
+    stdin: '{{ .Env.COSIGN_PASSWORD }}'
+
 dockers:
   - image_templates: [ "ghcr.io/trendyol/{{ .ProjectName }}:{{ .Version }}-amd64" ]
     dockerfile: Dockerfile.goreleaser
@@ -60,20 +71,14 @@ dockers:
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
 archives:
-  - format: tar.gz
+  - format: binary
     replacements:
       darwin: Darwin
       linux: Linux
       windows: Windows
       386: i386
       amd64: x86_64
-    format_overrides:
-      - goos: windows
-        format: zip
     name_template: '{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}'
-    files:
-      - README.md
-      - LICENSE
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
 snapshot:
@@ -87,10 +92,9 @@ changelog:
       - 'README'
       - Merge pull request
       - Merge branch
-# .goreleaser.yml
 release:
-  # Repo in which the release will be created.
-  # Default is extracted from the origin remote URL or empty if its private hosted.
   github:
     owner: Trendyol
     name: kink
+  extra_files:
+    - glob: dist/*.sig
