@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
@@ -65,6 +66,15 @@ func NewCmdRun() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("please provide a name as an argument")
+			}
+
+			if namespace == "" {
+				n, _, err := kubernetes.DefaultClientConfig().Namespace()
+				if err != nil {
+					return err
+				}
+
+				namespace = n
 			}
 
 			name := args[0]
@@ -305,7 +315,6 @@ func NewCmdRun() *cobra.Command {
 				},
 			}
 
-
 			// Manage resource
 			svc, err := serviceClient.Create(ctx, serviceObj, metav1.CreateOptions{})
 			if err != nil {
@@ -393,7 +402,7 @@ $ KUBECONFIG=%s kubectl get nodes -o wide`, name, name, name, namespace, kubecon
 	}
 
 	cmd.Flags().StringVarP(&k8sVersion, "kubernetes-version", "k", types.NodeImageTag, "Desired version of Kubernetes")
-	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.Flags().StringVarP(&outputPath, "output-path", "o", currDir, "Output path for kubeconfig")
 	cmd.Flags().StringVarP(&clusterName, "cluster-name", "", "", "The name for cluster")
 	cmd.Flags().IntVarP(&timeout, "timeout", "t", 240, "timeout for wait")

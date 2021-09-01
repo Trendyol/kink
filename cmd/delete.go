@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
@@ -44,6 +45,15 @@ func NewCmdDelete() *cobra.Command {
 			client, err := kubernetes.Client()
 			if err != nil {
 				return err
+			}
+
+			if namespace == "" {
+				n, _, err := kubernetes.DefaultClientConfig().Namespace()
+				if err != nil {
+					return err
+				}
+
+				namespace = n
 			}
 
 			podClient := client.CoreV1().Pods(namespace)
@@ -117,7 +127,7 @@ func NewCmdDelete() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&all, "all", "a", false, "All pods")
-	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Target namespace")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
@@ -131,6 +141,7 @@ func deletePodAndRelatedService(pod *corev1.Pod, podClient v1.PodInterface, ctx 
 	shouldDelete := isContainersReady(pod)
 
 	if force {
+		fmt.Printf("Deleting Pod %s\n", pod.Name)
 		if err := podClient.Delete(ctx, pod.Name, options); err != nil {
 			return fmt.Errorf("deleting pod: %q", err)
 		}
