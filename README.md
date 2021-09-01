@@ -1,15 +1,15 @@
 # kink (abbreviation of **_KinD in Kubernetes_**)
 
-A helper CLI that facilitates to manage KinD clusters as Kubernetes pods
-
 <div align="center">
-  <img width="300" height="400" src="https://github.com/marcusolsson/gophers/raw/master/viking.png">
+  <img width="300" height="400" src="https://github.com/marcusolsson/gophers/raw/master/viking.png" alt="https://github.com/marcusolsson/gophers">
 </div>
 
-> Credit: https://github.com/marcusolsson/gophers
+A helper CLI that facilitates to manage KinD clusters as Kubernetes pods
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+![kink_v1.gif](./assets/kink_v1.gif)
 
 ## Table of Contents
 
@@ -67,8 +67,7 @@ and [Kubernetes](https://gitlab.trendyol.com/platform/base/poc/running-kind-clus
 . Then, **_kink_** allows you to create Kubernetes Pods based on Docker images we provide and connect to the cluster
 running inside a Pod. In order the connect to the cluster running inside a Pod, **_kink_** does some tricks such as
 creating **_Kubernetes Service_**
-and [adding node IP](https://github.com/Trendyol/kink/-/blob/master/cmd/run.go#L145-152) which is
-scheduled on to
+and [adding node IP](https://github.com/Trendyol/kink/-/blob/master/cmd/run.go#L145-152) which is scheduled on to
 the [CERT_SANS](https://gitlab.trendyol.com/platform/base/poc/running-kind-cluster-in-pod-images/-/blob/master/kind-cluster/entrypoint-wrapper.sh#L17)
 addresses to make the connection secure over HTTPS.
 
