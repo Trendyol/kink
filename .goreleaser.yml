@@ -70,6 +70,26 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
+
+brews:
+  - tap:
+      owner: Trendyol
+      name: homebrew-trendyol-tap
+    homepage: https://github.com/trendyol
+    description: KinK is a helper CLI that facilitates to manage KinD clusters as Kubernetes pods. Designed to ease clusters up for fast testing with batteries included in mind.
+    license: MIT
+    test: |
+      system "#{bin}/kink version"
+    dependencies:
+      - name: go
+        type: optional
+      - name: git
+    install: |-
+      bin.install "kink"
+      bash_completion.install "completions/kink.bash" => "kink"
+      zsh_completion.install "completions/kink.zsh" => "_kink"
+      fish_completion.install "completions/kink.fish"
+
 archives:
   - format: binary
     replacements:
