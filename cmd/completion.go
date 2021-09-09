@@ -34,7 +34,7 @@ Bash:
 
   # To load completions for each session, execute once:
   # Linux:
-  $ yourprogra completion bash > /etc/bash_completion.d/kink
+  $ kink completion bash > /etc/bash_completion.d/kink
   # macOS:
   $ kink completion bash > /usr/local/etc/bash_completion.d/kink
 
