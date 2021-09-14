@@ -47,10 +47,10 @@ signs:
   - cmd: cosign
     stdin: '{{ .Env.COSIGN_PASSWORD }}'
     args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
-    artifacts: binary
+    artifacts: checksum
 
 docker_signs:
-  - artifacts: all
+  - artifacts: images
     args: [ "sign", "-key=cosign.key", "${artifact}" ]
     stdin: '{{ .Env.COSIGN_PASSWORD }}'
 
@@ -88,8 +88,7 @@ brews:
       bin.install "kink"
 
 archives:
-  - format: binary
-    replacements:
+  - replacements:
       darwin: Darwin
       linux: Linux
       windows: Windows
@@ -113,5 +112,3 @@ release:
   github:
     owner: Trendyol
     name: kink
-  extra_files:
-    - glob: dist/*.sig
