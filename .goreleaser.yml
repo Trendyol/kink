@@ -86,9 +86,6 @@ brews:
       - name: git
     install: |-
       bin.install "kink"
-      bash_completion.install "completions/kink.bash" => "kink"
-      zsh_completion.install "completions/kink.zsh" => "_kink"
-      fish_completion.install "completions/kink.fish"
 
 archives:
   - format: binary
