@@ -6,6 +6,9 @@
 
 ---
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Trendyol/kink/release) 
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/Trendyol/kink)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Trendyol/kink)](https://goreportcard.com/report/github.com/Trendyol/kink)
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
