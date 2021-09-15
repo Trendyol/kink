@@ -85,7 +85,7 @@ func NewCmdLoad() *cobra.Command {
 			for _, d := range dockerImages {
 				if err := isImageExistLocally(d); err != nil {
 					log.Printf("%s is not found locally, pulling...\n", d)
-					command := exec.Command("docker", []string{"image", "pull", d}...)
+					command := exec.Command("docker", []string{"image", "pull", d}...) // #nosec G204
 					stderr, _ := command.StdoutPipe()
 					if err := command.Start(); err != nil {
 						return err
@@ -99,7 +99,7 @@ func NewCmdLoad() *cobra.Command {
 					if err := command.Wait(); err != nil {
 						return err
 					}
-					log.Printf("%s pulled succesfully\n", d)
+					log.Printf("%s pulled successfully\n", d)
 				}
 			}
 
@@ -115,7 +115,7 @@ func NewCmdLoad() *cobra.Command {
 				return err
 			}
 
-			result, err := doExec(nameArg, namespace, "kind-cluster", []string{"docker", "load", "-i", containerPath}, nil)
+			result, err := doExec(nameArg, namespace, []string{"docker", "load", "-i", containerPath})
 			if err != nil {
 				return err
 			}
@@ -124,8 +124,11 @@ func NewCmdLoad() *cobra.Command {
 
 			for _, n := range dockerImages {
 				ref, err := name.ParseReference(n)
+				if err != nil {
+					return err
+				}
 				args := []string{"kind", "load", "docker-image", ref.Name(), "--name", clusterName, "-v", "8"}
-				result, err := doExec(nameArg, namespace, "kind-cluster", args, nil)
+				result, err := doExec(nameArg, namespace, args)
 				if err != nil {
 					return err
 				}

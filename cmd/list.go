@@ -84,7 +84,7 @@ func NewCmdList() *cobra.Command {
 			})
 
 			for _, pod := range pods.Items {
-				p.PrintObj(pod.DeepCopyObject(), os.Stdout)
+				_ = p.PrintObj(pod.DeepCopyObject(), os.Stdout)
 			}
 
 			return nil
