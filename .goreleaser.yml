@@ -4,6 +4,9 @@ env:
   - GO111MODULE=on
   - CGO_ENABLED=0
 
+gomod:
+  proxy: true
+
 before:
   hooks:
     - go mod tidy
