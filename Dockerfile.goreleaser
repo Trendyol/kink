@@ -1,6 +1,6 @@
 FROM gcr.io/distroless/static:nonroot-amd64
 
-ADD kink-linux-amd64 /usr/local/bin/kink
+ADD kink /usr/local/bin/kink
 
 USER nonroot
 ENTRYPOINT ["kink"]

@@ -13,7 +13,7 @@ before:
     - go mod download
 builds:
   - id: linux-amd64
-    binary: kink-linux-{{ .Arch }}
+    binary: kink
     main: ./main.go
     goos:
       - linux
@@ -21,10 +21,9 @@ builds:
       - amd64
     ldflags:
       - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
-    no_unique_dist_dir: true
 
   - id: darwin-amd64
-    binary: kink-darwin-{{ .Arch }}
+    binary: kink
     main: ./main.go
     goos:
       - darwin
@@ -32,10 +31,9 @@ builds:
       - amd64
     ldflags:
       - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
-    no_unique_dist_dir: true
 
   - id: windows-amd64
-    binary: kink-windows-{{ .Arch }}
+    binary: kink
     main: ./main.go
     goos:
       - windows
@@ -44,7 +42,6 @@ builds:
     ldflags:
       - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
       - -buildmode=exe
-    no_unique_dist_dir: true
 
 signs:
   - cmd: cosign
