@@ -93,7 +93,7 @@ If you have Go 1.16+, you can directly install by running:
 $ go install github.com/Trendyol/kink@latest
 ```
 
-and the resulting binary will be placed at $HOME/go/bin/kink.
+and the resulting binary will be placed at **_$HOME/go/bin/kink_**.
 
 ### Homebrew
 
