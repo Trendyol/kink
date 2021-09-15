@@ -93,8 +93,6 @@ If you have Go 1.16+, you can directly install by running:
 $ go install github.com/Trendyol/kink@latest
 ```
 
-**Note:** _Since we already sign the binaries and images using [cosign](https://github.com/sigstore/cosign), you can easily verify by using our [public key](https://raw.githubusercontent.com/Trendyol/kink/main/cosign.pub): `$ cosign verify -k ./cosign.pub] <FILE>`._
-
 and the resulting binary will be placed at $HOME/go/bin/kink.
 
 ### Homebrew
