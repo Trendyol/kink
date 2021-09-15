@@ -85,16 +85,26 @@ addresses to make the connection secure over HTTPS.
 
 ## Installation
 
+### Go
+
 If you have Go 1.16+, you can directly install by running:
 
 ```shell
-$ export GOPRIVATE="gitlab.trendyol.com"
 $ go install github.com/Trendyol/kink@latest
 ```
 
 **Note:** _Since we already sign the binaries and images using [cosign](https://github.com/sigstore/cosign), you can easily verify by using our [public key](https://raw.githubusercontent.com/Trendyol/kink/main/cosign.pub): `$ cosign verify -k ./cosign.pub] <FILE>`._
 
 and the resulting binary will be placed at $HOME/go/bin/kink.
+
+### Homebrew
+
+If you have brew installed, then you can easily download this with the following commands:
+
+```shell
+brew tap trendyol/trendyol-tap
+brew install kink
+```
 
 ## Quick Start
 
@@ -125,10 +135,10 @@ This shows how to:
 
 ```shell
 $ kink list-supported-versions
-v1.16.0
-v1.17.0
-v1.18.0
-v1.20.0
+v1.16.15
+v1.17.17
+v1.19.11
+v1.20.7
 v1.21.2
 ```
 
@@ -136,29 +146,36 @@ v1.21.2
 
 * Choose one of your favorite Kubernetes distribution such as KinD, Minikube, k0s, k3s, etc and run it first.
 
+Create custer with **_kind_**
+
 ```shell
 $ kind create cluster
-$ kink run --timeout 360
-[1/1] Creating Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db... 100% [===============] (0.184 kB/s)
-KUBECONFIG file has been written to the directory: /var/folders/pf/6h9t0mnd4d342ncgpjq_3zl80000gp/T/kink_kubeconfig642727642/kubeconfig
+```
 
+Run **_kink_**
+```shell
+$ kink hello-world run --timeout 360
+[1/1] Creating Pod hello-world... 100% [===============] (0.001 kB/s)KUBECONFIG file has been written to
+the directory: /var/folders/pf/6h9t0mnd4d342ncgpjq_3zl80000gp/T/kink_kubeconfig3638074110/kubeconfig
 Thanks for using kink!
-Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db and Service kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db created successfully!
+Pod hello-world and Service hello-world created successfully!
 
 You can view the logs by running the following command:
-$ kubectl logs -f kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db -n default
+$ kubectl logs -f hello-world -n default
 
-KUBECONFIG file generated at path '/Users/batuhan.apaydin/workspace/projects/trendyol/kink/kubeconfig'.
+KUBECONFIG file generated at path '/Users/batuhan.apaydin/workspace/projects/trendyol/k8s-common/kubeconfig'.
 Start managing your internal KinD cluster by running the following command:
-$ KUBECONFIG=/Users/batuhan.apaydin/workspace/projects/trendyol/kink/kubeconfig kubectl get nodes -o wide%
+$ KUBECONFIG=/Users/batuhan.apaydin/workspace/projects/trendyol/k8s-common/kubeconfig kubectl get nodes -o wide
 ```
 
 ### List KinD clusters
 
+* You can list all the KinD cluster provisied by yourself:
+
 ```shell
 $ kink list
-NAMESPACE   NAME                                                    AGE    LABELS
-default     pod/kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db   3d4h   generated-uuid=f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db,runned-by=batuhan.apaydin_C02DM1U3MD6R
+NAMESPACE   NAME              AGE    LABELS
+default     pod/hello-world   5m5s   generated-uuid=99596236-4b08-4e09-82ec-db3158840a1c,runned-by=batuhan.apaydin_C02DM1U3MD6R
 ```
 
 ### Delete KinD clusters
@@ -167,17 +184,13 @@ default     pod/kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db   3d4h   gener
 
 ```shell
 $ kink delete --all --force
-Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db and Service kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db will be deleted... Do you accept? (y/N) y
-Deleting Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db
+Deleting Pod hello-world
+Deleting Service hello-world
+
 ```
 
-* or you can delete one of them:
+* or you can delete one of them by speficying its name in the **_-name_** flag.
 
-```shell
-$ kink delete --name kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db
-Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db and Service kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db will be deleted... Do you accept? (y/N) y
-Deleting Pod kind-cluster-f1dc1e5a-eefa-4eea-94d8-bc6a99ea20db
-```
 
 ## Autocompletion Support
 
