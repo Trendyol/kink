@@ -11,6 +11,8 @@ before:
   hooks:
     - go mod tidy
     - go mod download
+    - ./scripts/completions.sh
+
 builds:
   - id: linux-amd64
     binary: kink-linux-{{ .Arch }}
@@ -89,6 +91,9 @@ brews:
       - name: git
     install: |-
       bin.install "kink"
+      bash_completion.install "completions/kink.bash" => "kink"
+      zsh_completion.install "completions/kink.zsh" => "_kink"
+      fish_completion.install "completions/kink.fish"
 
 archives:
   - replacements:
@@ -98,10 +103,15 @@ archives:
       386: i386
       amd64: x86_64
     name_template: '{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}'
+    files:
+      - completions/*
+
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
+
 snapshot:
   name_template: SNAPSHOT-{{.ShortCommit}}
+
 changelog:
   sort: asc
   filters:
@@ -111,6 +121,7 @@ changelog:
       - 'README'
       - Merge pull request
       - Merge branch
+
 release:
   github:
     owner: Trendyol
