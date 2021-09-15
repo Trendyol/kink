@@ -41,15 +41,3 @@ release:
 	export DOCKER_USERNAME=$(DOCKER_USERNAME) && \
 	export DOCKER_PASSWORD=$(DOCKER_PASSWORD) && \
 	LDFLAGS=$(LDFLAGS) goreleaser release --rm-dist
-
-release-local:
-	docker container run --rm --privileged \
-          -v $(shell pwd):/kink \
-          -v /var/run/docker.sock:/var/run/docker.sock \
-          -w /kink \
-          --entrypoint='/bin/sh' \
-          -e GITLAB_TOKEN=$(GITLAB_TOKEN) \
-          -e DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
-          -e DOCKER_USERNAME=$(DOCKER_USERNAME) \
-          -e DOCKER_PASSWORD=$(DOCKER_PASSWORD) \
-          registry.trendyol.com/platform/base/image/gythialy/golang-cross:v1.17 -c "make release"
