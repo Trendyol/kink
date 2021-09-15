@@ -2,13 +2,17 @@
   <img alt="kink Logo" src="https://github.com/marcusolsson/gophers/raw/master/viking.png?v=3&s=200" height="200" />
   <h3 align="center">kink</h3>
   <p align="center">A helper CLI that facilitates to manage KinD clusters as Kubernetes pods.</p>
+  <p align="center">
+  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0"></a>
+  <a href="https://goreportcard.com/report/github.com/Trendyol/kink"><img src="https://goreportcard.com/badge/github.com/Trendyol/kink" alt="Go Report"></a>
+  <a href="https://github.com/Trendyol/kink/actions?workflow=test"><img src="https://img.shields.io/github/workflow/status/Trendyol/kink/release" alt="Build Status"></a>
+  <a href="https://github.com/Trendyol/kink/releases/latest"><img src="https://img.shields.io/github/release/Trendyol/kink.svg" alt="GitHub release"></a>
+    <a href="https://github.com/Trendyol/kink/"><img src="https://img.shields.io/github/go-mod/go-version/Trendyol/kink" alt="Go Mod"></a>
+</p>
 </p>
 
 ---
 
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Trendyol/kink/release) 
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/Trendyol/kink)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Trendyol/kink)](https://goreportcard.com/report/github.com/Trendyol/kink)
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
