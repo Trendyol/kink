@@ -16,7 +16,9 @@ limitations under the License.
 
 package types
 
-const NodeImageRepository = "trendyoltech/kind-node"
-const ImageRepository = "trendyoltech/kind-cluster"
-const NodeImageTag = "1.21.2"
-const ImageTag = "v0.0.1"
+const (
+	NodeImageRepository = "trendyoltech/kind-node"
+	ImageRepository     = "trendyoltech/kind-cluster"
+	NodeImageTag        = "1.21.2"
+	ImageTag            = "v0.0.1"
+)

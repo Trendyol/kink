@@ -36,11 +36,11 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapilatest "k8s.io/client-go/tools/clientcmd/api/latest"
 
+	"github.com/Trendyol/kink/pkg/kubernetes"
+	"github.com/Trendyol/kink/pkg/types"
 	"github.com/k0kubun/go-ansi"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"github.com/Trendyol/kink/pkg/kubernetes"
-	"github.com/Trendyol/kink/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +57,7 @@ func NewCmdRun() *cobra.Command {
 	var k8sVersion, namespace, outputPath, clusterName string
 	var timeout int
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Ephemeral cluster could be created by run command",
 		Long: `It enables to create a cluster inside Kubernetes. Example command is shown below
@@ -88,7 +88,7 @@ func NewCmdRun() *cobra.Command {
 
 			generatedUUID := uuid.NewUUID()
 
-			//podName := "kind-cluster-" + string(generatedUUID)
+			// podName := "kind-cluster-" + string(generatedUUID)
 
 			currentUser, err := user.Current()
 			if err != nil {
@@ -350,7 +350,7 @@ func NewCmdRun() *cobra.Command {
 			}
 			defer os.RemoveAll(dname)
 			tmpKubeconfigPath := filepath.Join(dname, "kubeconfig")
-			err = WriteFile(tmpKubeconfigPath, []byte(kubeconfig), 0600)
+			err = WriteFile(tmpKubeconfigPath, []byte(kubeconfig), 0o600)
 
 			if err != nil {
 				return err
@@ -378,7 +378,7 @@ func NewCmdRun() *cobra.Command {
 				return err
 			}
 
-			err = WriteFile(kubeconfigPath, merged, 0600)
+			err = WriteFile(kubeconfigPath, merged, 0o600)
 			if err != nil {
 				return err
 			}
@@ -445,7 +445,7 @@ func WriteFile(path string, data []byte, perm os.FileMode) error {
 	if index := strings.LastIndex(path, "/"); index != -1 {
 		dir := path[:index+1]
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			if err := os.MkdirAll(dir, 0744); err != nil {
+			if err := os.MkdirAll(dir, 0o744); err != nil {
 				return err
 			}
 		}

@@ -21,17 +21,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/spf13/cobra"
-	"github.com/Trendyol/kink/pkg/kubernetes"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/Trendyol/kink/pkg/kubernetes"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/spf13/cobra"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NewCmdLoad represents the load command
@@ -39,7 +41,7 @@ func NewCmdLoad() *cobra.Command {
 	var namespace, clusterName string
 	var dockerImages []string
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:          "load",
 		Short:        "Load Docker images into KinD cluster",
 		Long:         `It enables to load Docker images into KinD cluster`,
@@ -124,7 +126,6 @@ func NewCmdLoad() *cobra.Command {
 				ref, err := name.ParseReference(n)
 				args := []string{"kind", "load", "docker-image", ref.Name(), "--name", clusterName, "-v", "8"}
 				result, err := doExec(nameArg, namespace, "kind-cluster", args, nil)
-
 				if err != nil {
 					return err
 				}

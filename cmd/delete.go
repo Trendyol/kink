@@ -19,13 +19,14 @@ package cmd
 import (
 	"context"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"os"
 	"os/user"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/spf13/cobra"
 	"github.com/Trendyol/kink/pkg/kubernetes"
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -35,7 +36,7 @@ func NewCmdDelete() *cobra.Command {
 	var all, force bool
 	var namespace string
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Ephemeral cluster could be deleted by delete command",
 		Long: `You can delete kink cluster by using delete command

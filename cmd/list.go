@@ -19,13 +19,14 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/printers"
 	"os"
 	"os/user"
 
-	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/printers"
+
 	"github.com/Trendyol/kink/pkg/kubernetes"
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,7 +34,7 @@ import (
 func NewCmdList() *cobra.Command {
 	var namespace string
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all ephemeral cluster",
 		Long: `List all ephemeral cluster
@@ -69,7 +70,6 @@ func NewCmdList() *cobra.Command {
 			pods, err := kubeclient.List(context.TODO(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", user.Username, hostname)),
 			})
-
 			if err != nil {
 				return err
 			}

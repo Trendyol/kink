@@ -24,7 +24,7 @@ import (
 
 // NewCompletionCmd represents the completion command
 func NewCompletionCmd() *cobra.Command {
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
 		Short: "Generate completion script",
 		Long: `To load completions:
