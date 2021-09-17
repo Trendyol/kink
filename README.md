@@ -9,7 +9,6 @@
   <a href="https://github.com/Trendyol/kink/releases/latest"><img src="https://img.shields.io/github/release/Trendyol/kink.svg" alt="GitHub release"></a>
     <a href="https://github.com/Trendyol/kink/"><img src="https://img.shields.io/github/go-mod/go-version/Trendyol/kink" alt="Go Mod"></a>
 </p>
-</p>
 
 ---
 
