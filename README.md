@@ -7,7 +7,8 @@
   <a href="https://goreportcard.com/report/github.com/Trendyol/kink"><img src="https://goreportcard.com/badge/github.com/Trendyol/kink" alt="Go Report"></a>
   <a href="https://github.com/Trendyol/kink/actions?workflow=test"><img src="https://img.shields.io/github/workflow/status/Trendyol/kink/release" alt="Build Status"></a>
   <a href="https://github.com/Trendyol/kink/releases/latest"><img src="https://img.shields.io/github/release/Trendyol/kink.svg" alt="GitHub release"></a>
-    <a href="https://github.com/Trendyol/kink/"><img src="https://img.shields.io/github/go-mod/go-version/Trendyol/kink" alt="Go Mod"></a>
+  <a href="https://github.com/Trendyol/kink/"><img src="https://img.shields.io/github/go-mod/go-version/Trendyol/kink" alt="Go Mod"></a>
+  <a href="https://codecov.io/gh/Trendyol/kink"><img src="https://codecov.io/gh/Trendyol/kink/branch/main/graph/badge.svg" alt="Codecov"></a>
 </p>
 </p>
 

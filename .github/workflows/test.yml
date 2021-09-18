@@ -27,7 +27,9 @@ jobs:
       - name: Build
         run: go build -v .
       - name: Test
-        run: go test ./... -v -race
+        run: go test ./... -v -race -coverprofile=coverage.txt -covermode=atomic
+      - name: Upload coverage
+        run: bash <(curl -s https://codecov.io/bash)
 
   golangci:
     runs-on: ubuntu-latest
