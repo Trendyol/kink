@@ -18,16 +18,14 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"os/user"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/printers"
 
 	"github.com/Trendyol/kink/pkg/kubernetes"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NewCmdList represents the list command
@@ -57,18 +55,13 @@ func NewCmdList() *cobra.Command {
 
 			kubeclient := client.CoreV1().Pods(namespace)
 
-			user, err := user.Current()
-			if err != nil {
-				return err
-			}
-
-			hostname, err := os.Hostname()
+			selector, err := getClusterSelector()
 			if err != nil {
 				return err
 			}
 
 			pods, err := kubeclient.List(context.TODO(), metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", user.Username, hostname)),
+				LabelSelector: selector,
 			})
 			if err != nil {
 				return err

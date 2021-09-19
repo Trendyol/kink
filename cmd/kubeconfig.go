@@ -19,13 +19,14 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/Trendyol/kink/pkg/kubernetes"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 func init() {
@@ -105,10 +106,12 @@ func NewCmdKubeConfig() *cobra.Command {
 			kubeconfig = strings.ReplaceAll(kubeconfig, "30001", fmt.Sprint(nodePort))
 
 			if outputPath != "" {
-				os.WriteFile(outputPath, []byte(kubeconfig), 0o600)
+				if err := os.WriteFile(outputPath, []byte(kubeconfig), 0o600); err != nil {
+					return errors.Wrap(err, "failed to write kubeconfig to "+kubeconfig)
+				}
 				fmt.Printf("kubeconfig exported for %s to %s\n", name, outputPath)
 			} else {
-				fmt.Print(kubeconfig)
+				fmt.Print(kubeconfig) // write kubeconfig to stdout
 			}
 
 			return nil
