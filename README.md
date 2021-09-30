@@ -153,7 +153,7 @@ $ kind create cluster
 
 Run **_kink_**
 ```shell
-$ kink hello-world run --timeout 360
+$ kink run hello-world --timeout 360
 [1/1] Creating Pod hello-world... 100% [===============] (0.001 kB/s)KUBECONFIG file has been written to
 the directory: /var/folders/pf/6h9t0mnd4d342ncgpjq_3zl80000gp/T/kink_kubeconfig3638074110/kubeconfig
 Thanks for using kink!
