@@ -33,6 +33,16 @@ builds:
       - amd64
     ldflags:
       - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
+  
+  - id: darwin-arm64
+    binary: kink
+    main: ./main.go
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
 
   - id: windows-amd64
     binary: kink
