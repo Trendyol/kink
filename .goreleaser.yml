@@ -33,6 +33,16 @@ builds:
       - amd64
     ldflags:
       - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
+  
+  - id: darwin-arm64
+    binary: kink
+    main: ./main.go
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w -X github.com/Trendyol/kink/cmd.GitVersion={{ .Version }} -X github.com/Trendyol/kink/cmd.gitCommit={{ .ShortCommit }}  -X github.com/Trendyol/kink/cmd.buildDate={{ .CommitDate }}
 
   - id: windows-amd64
     binary: kink
@@ -87,10 +97,27 @@ brews:
         type: optional
       - name: git
     install: |-
+      if build.head?
+        project = "github.com/Trendyol/kink"
+        ldflags = %W[
+          -s -w
+          -X #{project}/cmd.GitVersion=#{Utils.git_branch}
+          -X #{project}/cmd.gitCommit=#{Utils.git_short_head}
+          -X #{project}/cmd.gitTreeState=clean
+          -X #{project}/cmd.buildDate=#{Time.now.utc.iso8601}
+        ]
+        system "go", "build", *std_go_args(output: "kink", ldflags: ldflags.join(" ")), "main.go"
+        system "./scripts/completions.sh"
+      end
       bin.install "kink"
       bash_completion.install "completions/kink.bash" => "kink"
       zsh_completion.install "completions/kink.zsh" => "_kink"
       fish_completion.install "completions/kink.fish"
+    custom_block: |
+      head "https://github.com/Trendyol/kink.git", branch: "main"
+      head do
+        depends_on "go" => :build
+      end
 
 archives:
   - replacements:
