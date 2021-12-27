@@ -8,7 +8,7 @@ require (
 	github.com/google/go-containerregistry v0.6.0
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1
-	github.com/schollz/progressbar/v3 v3.8.3
+	github.com/schollz/progressbar/v3 v3.8.5
 	github.com/spf13/cobra v1.2.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0 // indirect
