@@ -10,7 +10,6 @@
   <a href="https://github.com/Trendyol/kink/"><img src="https://img.shields.io/github/go-mod/go-version/Trendyol/kink" alt="Go Mod"></a>
   <a href="https://codecov.io/gh/Trendyol/kink"><img src="https://codecov.io/gh/Trendyol/kink/branch/main/graph/badge.svg" alt="Codecov"></a>
 </p>
-</p>
 
 ---
 

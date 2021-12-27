@@ -19,16 +19,14 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/user"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Trendyol/kink/pkg/kubernetes"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // NewCmdDelete represents the delete command
@@ -62,18 +60,13 @@ func NewCmdDelete() *cobra.Command {
 
 			ctx := context.TODO()
 
-			currentUser, err := user.Current()
-			if err != nil {
-				return err
-			}
-
-			hostname, err := os.Hostname()
+			selector, err := getClusterSelector()
 			if err != nil {
 				return err
 			}
 
 			pods, err := podClient.List(ctx, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("runned-by=%s", fmt.Sprintf("%s_%s", currentUser.Username, hostname)),
+				LabelSelector: selector,
 			})
 
 			options := metav1.DeleteOptions{}
