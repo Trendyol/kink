@@ -3,7 +3,7 @@ module github.com/Trendyol/kink
 go 1.17
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.2
+	github.com/AlecAivazis/survey/v2 v2.3.3
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-containerregistry v0.6.0
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
