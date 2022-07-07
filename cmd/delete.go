@@ -34,7 +34,7 @@ import (
 // NewCmdDelete represents the delete command
 func NewCmdDelete() *cobra.Command {
 	var all, force bool
-	var namespace string
+	var name, namespace string
 
 	cmd := &cobra.Command{
 		Use:   "delete",
@@ -102,7 +102,9 @@ func NewCmdDelete() *cobra.Command {
 			}
 
 			var selectedNames []string
-			if !force {
+			if name != "" {
+				selectedNames = append(selectedNames, name)
+			} else if !force {
 				prompt := &survey.MultiSelect{
 					Message: "What pod do you prefer to delete:",
 					Options: podNames,
@@ -110,8 +112,8 @@ func NewCmdDelete() *cobra.Command {
 				_ = survey.AskOne(prompt, &selectedNames)
 			}
 
-			for _, name := range selectedNames {
-				p, err := podClient.Get(ctx, name, metav1.GetOptions{})
+			for _, podName := range selectedNames {
+				p, err := podClient.Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					return fmt.Errorf("could not get pod: %v", err)
 				}
@@ -128,6 +130,7 @@ func NewCmdDelete() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&all, "all", "a", false, "All pods")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
+	cmd.Flags().StringVar(&name, "name", "", "Target pod name")
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
