@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -33,7 +34,7 @@ import (
 
 // NewCmdDelete represents the delete command
 func NewCmdDelete() *cobra.Command {
-	var all, force bool
+	var all, force, silent bool
 	var name, namespace string
 
 	cmd := &cobra.Command{
@@ -43,6 +44,10 @@ func NewCmdDelete() *cobra.Command {
 		usage:	kink delete`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if silent && name == "" {
+				return errors.New("the pod name must be set when using the silent flag")
+			}
+
 			client, err := kubernetes.Client()
 			if err != nil {
 				return err
@@ -80,6 +85,7 @@ func NewCmdDelete() *cobra.Command {
 			if force {
 				gracePeriodSeconds := int64(0)
 				options.GracePeriodSeconds = &gracePeriodSeconds
+				silent = true
 			}
 
 			if all {
@@ -118,7 +124,7 @@ func NewCmdDelete() *cobra.Command {
 					return fmt.Errorf("could not get pod: %v", err)
 				}
 
-				err = deletePodAndRelatedService(ctx, *p, podClient, options, serviceClient, force)
+				err = deletePodAndRelatedService(ctx, *p, podClient, options, serviceClient, silent)
 				if err != nil {
 					return err
 				}
@@ -131,19 +137,20 @@ func NewCmdDelete() *cobra.Command {
 	cmd.Flags().BoolVarP(&all, "all", "a", false, "All pods")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Target namespace")
 	cmd.Flags().StringVar(&name, "name", "", "Target pod name")
+	cmd.Flags().BoolVarP(&silent, "silent", "s", false, "Don't ask for confirmation, require --name to be set")
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "force delete")
 
 	return cmd
 }
 
-func deletePodAndRelatedService(ctx context.Context, pod corev1.Pod, podClient v1.PodInterface, options metav1.DeleteOptions, serviceClient v1.ServiceInterface, force bool) error {
+func deletePodAndRelatedService(ctx context.Context, pod corev1.Pod, podClient v1.PodInterface, options metav1.DeleteOptions, serviceClient v1.ServiceInterface, silent bool) error {
 	var deleteConfirm bool
 	prompt := &survey.Confirm{
 		Message: fmt.Sprintf("Pod %s and Service %s will be deleted... Do you accept?", pod.Name, pod.Name),
 	}
 	shouldDelete := isContainersReady(pod)
 
-	if force {
+	if silent {
 		fmt.Printf("Deleting Pod %s\n", pod.Name)
 		if err := podClient.Delete(ctx, pod.Name, options); err != nil {
 			return fmt.Errorf("deleting pod: %q", err)
