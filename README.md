@@ -187,7 +187,7 @@ Deleting Pod hello-world
 Deleting Service hello-world
 ```
 
-* or you can delete one of them by speficying its name in the **_--name_** flag.
+* or you can delete one of them by specifying its name with the **_--name_** flag.
 
 ```shell
 $ kink delete --name hello-world --silent
