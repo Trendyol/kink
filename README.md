@@ -185,10 +185,15 @@ default     pod/hello-world   5m5s   generated-uuid=99596236-4b08-4e09-82ec-db31
 $ kink delete --all --force
 Deleting Pod hello-world
 Deleting Service hello-world
-
 ```
 
-* or you can delete one of them by speficying its name in the **_-name_** flag.
+* or you can delete one of them by speficying its name in the **_--name_** flag.
+
+```shell
+$ kink delete --name hello-world --silent
+Deleting Pod hello-world
+Deleting Service hello-world
+```
 
 
 ## Autocompletion Support
