@@ -38,8 +38,8 @@ import (
 
 	"github.com/Trendyol/kink/pkg/kubernetes"
 	"github.com/Trendyol/kink/pkg/types"
-	"github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar/v3"
+	ansi "github.com/k0kubun/go-ansi"
+	progressbar "github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -387,9 +387,9 @@ func NewCmdRun() *cobra.Command {
 Pod %s and Service %s created successfully!
 
 You can view the logs by running the following command:
-$ kubectl logs -f %s -n %s 
+$ kubectl logs -f %s -n %s
 
-KUBECONFIG file generated at path '%s'. 
+KUBECONFIG file generated at path '%s'.
 Start managing your internal KinD cluster by running the following command:
 $ KUBECONFIG=%s kubectl get nodes -o wide`, name, name, name, namespace, kubeconfigPath, kubeconfigPath)
 			return nil
