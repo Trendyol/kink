@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -164,10 +163,10 @@ func save(images []string, dest string) error {
 	return exec.Command("docker", commandArgs...).Run()
 }
 
-// TempDir is like ioutil.TempDir, but more docker friendly
+// TempDir is like os.MkdirTemp, but more docker friendly
 func TempDir(dir, prefix string) (name string, err error) {
 	// create a tempdir as normal
-	name, err = ioutil.TempDir(dir, prefix)
+	name, err = os.MkdirTemp(dir, prefix)
 	if err != nil {
 		return "", err
 	}

@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -344,7 +343,7 @@ func NewCmdRun() *cobra.Command {
 
 			kubeconfigPath := filepath.Join(outputPath, "kubeconfig")
 
-			dname, err := ioutil.TempDir("", "kink_kubeconfig")
+			dname, err := os.MkdirTemp("", "kink_kubeconfig")
 			if err != nil {
 				return err
 			}
