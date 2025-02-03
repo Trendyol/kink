@@ -1,3 +1,5 @@
+
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Trendyol/kink/badge)](https://scorecard.dev/viewer/?uri=github.com/Trendyol/kink)
 <p align="center">
   <img alt="kink Logo" src="https://github.com/marcusolsson/gophers/raw/master/viking.png?v=3&s=200" height="200" />
   <h3 align="center">kink</h3>
